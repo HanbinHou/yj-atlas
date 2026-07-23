@@ -3,7 +3,7 @@ import mdx from '@astrojs/mdx';
 
 export default defineConfig({
   integrations: [mdx()],
-  site: 'https://aw-arch.netlify.app',
+  site: 'https://yjatlas.com',
   build: {
     assets: 'assets'
   }
