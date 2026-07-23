@@ -1,0 +1,171 @@
+---
+// This component handles client-side filtering for the cases list.
+// filters is a JSON-serialized object of all filter options.
+// contentData is a JSON-serialized array of all content items.
+interface Props {
+  contentType: 'cases' | 'materials' | 'books';
+  allArchitects: string[];
+  allTypes: string[];
+  allMaterials: string[];
+  allLocations: string[];
+  allTags: string[];
+  years: { min: number; max: number };
+}
+
+const {
+  contentType,
+  allArchitects,
+  allTypes,
+  allMaterials,
+  allLocations,
+  allTags,
+  years,
+} = Astro.props;
+---
+
+<div class="filter-panel">
+  <div class="filter-row">
+    <div class="filter-group">
+      <label for="filter-architect">建筑师</label>
+      <select id="filter-architect" class="filter-select" data-filter="architect">
+        <option value="">全部</option>
+        {allArchitects.map(a => <option value={a}>{a}</option>)}
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-type">类型</label>
+      <select id="filter-type" class="filter-select" data-filter="type">
+        <option value="">全部</option>
+        {allTypes.map(t => <option value={t}>{t}</option>)}
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-material">材料</label>
+      <select id="filter-material" class="filter-select" data-filter="material">
+        <option value="">全部</option>
+        {allMaterials.map(m => <option value={m}>{m}</option>)}
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-location">地点</label>
+      <select id="filter-location" class="filter-select" data-filter="location">
+        <option value="">全部</option>
+        {allLocations.map(l => <option value={l}>{l}</option>)}
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-year-min">年份</label>
+      <input type="number" id="filter-year-min" class="filter-input" data-filter="yearMin" placeholder={String(years.min)} min={years.min} max={years.max} />
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-year-max">至</label>
+      <input type="number" id="filter-year-max" class="filter-input" data-filter="yearMax" placeholder={String(years.max)} min={years.min} max={years.max} />
+    </div>
+
+    <button id="filter-reset" class="btn-reset">清除筛选</button>
+  </div>
+
+  {allTags.length > 0 && (
+    <div style="margin-top: var(--space-md);">
+      <span style="font-size: 0.78rem; color: var(--color-text-muted); letter-spacing: 0.04em; text-transform: uppercase;">标签</span>
+      <div class="tag-list" id="tag-filter-container">
+        {allTags.map(t => (
+          <span class="tag tag-filter" data-tag={t} role="button" tabindex="0" style="cursor:pointer;">{t}</span>
+        ))}
+      </div>
+    </div>
+  )}
+</div>
+
+<p class="result-count" id="result-count"></p>
+
+<script>
+  // Client-side filtering
+  const cards = document.querySelectorAll<HTMLElement>('[data-card]');
+  const selects = document.querySelectorAll<HTMLSelectElement>('.filter-select');
+  const inputs = document.querySelectorAll<HTMLInputElement>('.filter-input');
+  const tagFilters = document.querySelectorAll<HTMLElement>('.tag-filter');
+  const resetBtn = document.getElementById('filter-reset');
+  const resultCount = document.getElementById('result-count');
+
+  let activeTag = '';
+
+  function updateCount() {
+    const visible = document.querySelectorAll('[data-card]:not([hidden])').length;
+    const total = cards.length;
+    if (resultCount) {
+      resultCount.textContent = visible === total ? `共 ${total} 项` : `显示 ${visible} / ${total} 项`;
+    }
+  }
+
+  function getFilterValues() {
+    const vals: Record<string, string> = {};
+    selects.forEach(s => { if (s.value) vals[s.dataset.filter!] = s.value; });
+    inputs.forEach(i => { if (i.value) vals[i.dataset.filter!] = i.value; });
+    return vals;
+  }
+
+  function applyFilters() {
+    const filters = getFilterValues();
+
+    cards.forEach(card => {
+      const data = JSON.parse(card.dataset.cardData || '{}');
+      let visible = true;
+
+      if (filters.architect && data.architect !== filters.architect) visible = false;
+      if (filters.type && data.type !== filters.type) visible = false;
+      if (filters.material && !data.materials.includes(filters.material)) visible = false;
+      if (filters.location && data.location !== filters.location) visible = false;
+      if (filters.yearMin && data.year < parseInt(filters.yearMin)) visible = false;
+      if (filters.yearMax && data.year > parseInt(filters.yearMax)) visible = false;
+      if (activeTag && !data.tags.includes(activeTag)) visible = false;
+
+      card.hidden = !visible;
+    });
+
+    updateCount();
+  }
+
+  selects.forEach(s => s.addEventListener('change', () => {
+    activeTag = '';
+    tagFilters.forEach(t => t.classList.remove('active'));
+    applyFilters();
+  }));
+  inputs.forEach(i => i.addEventListener('input', applyFilters));
+  resetBtn?.addEventListener('click', () => {
+    selects.forEach(s => s.value = '');
+    inputs.forEach(i => i.value = '');
+    activeTag = '';
+    tagFilters.forEach(t => t.classList.remove('active'));
+    applyFilters();
+  });
+
+  tagFilters.forEach(tag => {
+    tag.addEventListener('click', () => {
+      const isActive = tag.classList.contains('active');
+      tagFilters.forEach(t => t.classList.remove('active'));
+      if (isActive) {
+        activeTag = '';
+      } else {
+        tag.classList.add('active');
+        activeTag = tag.dataset.tag || '';
+      }
+      applyFilters();
+    });
+  });
+
+  updateCount();
+</script>
+
+<style>
+  .tag-filter.active {
+    background: var(--color-accent-light);
+    border-color: var(--color-accent);
+    color: var(--color-accent-dark);
+  }
+</style>

@@ -1,0 +1,28 @@
+---
+import type { CollectionEntry } from 'astro:content';
+const { case: c } = Astro.props;
+---
+
+<article class="card">
+  <a href={`/cases/${c.id}/`}>
+    {c.data.images.length > 0 ? (
+      <img class="card-image" src={c.data.images[0]} alt={c.data.title} loading="lazy" />
+    ) : (
+      <div class="card-image-placeholder">{c.data.title[0]}</div>
+    )}
+    <div class="card-body">
+      <h3 class="card-title">{c.data.title}</h3>
+      <div class="card-meta">
+        <span>{c.data.architect}</span>
+        <span class="card-meta-sep">·</span>
+        <span>{c.data.year}</span>
+        <span class="card-meta-sep">·</span>
+        <span>{c.data.location}</span>
+      </div>
+      <div class="tag-list">
+        <span class="tag">{c.data.type}</span>
+        {c.data.materials.slice(0, 2).map(m => <span class="tag">{m}</span>)}
+      </div>
+    </div>
+  </a>
+</article>

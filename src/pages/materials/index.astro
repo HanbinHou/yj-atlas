@@ -1,0 +1,69 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import MaterialCard from '../../components/MaterialCard.astro';
+
+const allMaterials = await getCollection('materials');
+const categories = [...new Set(allMaterials.map(m => m.data.category))].sort();
+---
+
+<BaseLayout
+  title="材料"
+  description="建筑材料手册 — 按类别、场景、标签浏览"
+>
+  <div class="container" style="padding-top: var(--space-xl);">
+    <h1 style="margin-bottom: var(--space-lg);">材料</h1>
+
+    <!-- Category navigation -->
+    <div class="tag-list" style="margin-bottom: var(--space-lg);" id="category-filters">
+      <span class="tag tag-filter active" data-category="" style="cursor:pointer;" role="button" tabindex="0">全部</span>
+      {categories.map(cat => (
+        <span class="tag tag-filter" data-category={cat} style="cursor:pointer;" role="button" tabindex="0">{cat}</span>
+      ))}
+    </div>
+
+    <p class="result-count" id="result-count"></p>
+
+    <div class="card-grid">
+      {allMaterials.map(m => (
+        <div data-card data-category={m.data.category}>
+          <MaterialCard material={m} />
+        </div>
+      ))}
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  const tags = document.querySelectorAll<HTMLElement>('.tag-filter');
+  const cards = document.querySelectorAll<HTMLElement>('[data-card]');
+  const resultCount = document.getElementById('result-count');
+
+  function updateCount() {
+    const visible = document.querySelectorAll('[data-card]:not([hidden])').length;
+    const total = cards.length;
+    if (resultCount) {
+      resultCount.textContent = visible === total ? `共 ${total} 项` : `显示 ${visible} / ${total} 项`;
+    }
+  }
+
+  tags.forEach(tag => {
+    tag.addEventListener('click', () => {
+      tags.forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+      const cat = tag.dataset.category || '';
+
+      cards.forEach(card => {
+        if (!cat || card.dataset.category === cat) {
+          card.hidden = false;
+        } else {
+          card.hidden = true;
+        }
+      });
+
+      updateCount();
+    });
+  });
+
+  updateCount();
+</script>

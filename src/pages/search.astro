@@ -1,0 +1,148 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+// Get all content for client-side search index
+const allCases = await getCollection('cases');
+const allMaterials = await getCollection('materials');
+const allBooks = await getCollection('books');
+
+interface SearchItem {
+  type: 'case' | 'material' | 'book';
+  typeLabel: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  tags: string[];
+  url: string;
+}
+
+const items: SearchItem[] = [
+  ...allCases.map(c => ({
+    type: 'case' as const,
+    typeLabel: '案例',
+    slug: c.id,
+    title: c.data.title,
+    subtitle: `${c.data.architect} · ${c.data.year} · ${c.data.location}`,
+    tags: [c.data.type, c.data.architect, c.data.location, ...c.data.materials, ...c.data.tags],
+    url: `/cases/${c.id}/`,
+  })),
+  ...allMaterials.map(m => ({
+    type: 'material' as const,
+    typeLabel: '材料',
+    slug: m.id,
+    title: m.data.title,
+    subtitle: m.data.category,
+    tags: [m.data.category, ...m.data.scenarios, ...m.data.tags],
+    url: `/materials/${m.id}/`,
+  })),
+  ...allBooks.map(b => ({
+    type: 'book' as const,
+    typeLabel: '书目',
+    slug: b.id,
+    title: b.data.title,
+    subtitle: `${b.data.author}${b.data.year ? ` · ${b.data.year}` : ''}`,
+    tags: [b.data.category, b.data.readingPath, ...b.data.tags],
+    url: `/books/${b.id}/`,
+  })),
+];
+---
+
+<BaseLayout
+  title="搜索"
+  description="搜索案例、材料、书目"
+>
+  <div class="container" style="padding-top: var(--space-xl);">
+    <h1 style="margin-bottom: var(--space-lg);">搜索</h1>
+
+    <div class="search-wrapper">
+      <input
+        type="text"
+        id="search-input"
+        class="search-input"
+        placeholder="搜索建筑师、材料、建筑类型、书名……"
+        autofocus
+      />
+
+      <div class="tag-list" style="margin-bottom: var(--space-lg);" id="type-filters">
+        <span class="tag tag-filter active" data-type="" style="cursor:pointer;" role="button" tabindex="0">全部</span>
+        <span class="tag tag-filter" data-type="case" style="cursor:pointer;" role="button" tabindex="0">案例</span>
+        <span class="tag tag-filter" data-type="material" style="cursor:pointer;" role="button" tabindex="0">材料</span>
+        <span class="tag tag-filter" data-type="book" style="cursor:pointer;" role="button" tabindex="0">书目</span>
+      </div>
+
+      <p class="result-count" id="result-count"></p>
+
+      <div id="search-results" style="display: flex; flex-direction: column; gap: var(--space-md);">
+        <!-- Results rendered by JS -->
+      </div>
+
+      <div id="search-empty" class="empty-state" hidden>
+        <p>没有找到匹配的结果</p>
+      </div>
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  // All search data embedded in page
+  const searchData = JSON.parse(document.getElementById('search-data')?.textContent || '[]');
+
+  const input = document.getElementById('search-input') as HTMLInputElement;
+  const resultsDiv = document.getElementById('search-results')!;
+  const emptyDiv = document.getElementById('search-empty')!;
+  const resultCount = document.getElementById('result-count')!;
+  const typeFilters = document.querySelectorAll<HTMLElement>('#type-filters .tag-filter');
+
+  let activeType = '';
+
+  typeFilters.forEach(tag => {
+    tag.addEventListener('click', () => {
+      typeFilters.forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+      activeType = tag.dataset.type || '';
+      doSearch();
+    });
+  });
+
+  function doSearch() {
+    const query = input.value.trim().toLowerCase();
+    const results = searchData.filter((item: any) => {
+      if (activeType && item.type !== activeType) return false;
+      if (!query) return true;
+      return (
+        item.title.toLowerCase().includes(query) ||
+        item.subtitle.toLowerCase().includes(query) ||
+        item.tags.some((t: string) => t.toLowerCase().includes(query))
+      );
+    });
+
+    resultCount.textContent = query
+      ? `找到 ${results.length} 条结果`
+      : `共 ${searchData.length} 条内容`;
+
+    if (results.length === 0) {
+      resultsDiv.innerHTML = '';
+      emptyDiv.hidden = false;
+    } else {
+      emptyDiv.hidden = true;
+      resultsDiv.innerHTML = results.map((item: any) => `
+        <a href="${item.url}" style="display:block; padding: var(--space-md); background: var(--color-surface); border: 1px solid var(--color-border); border-bottom: none;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <strong>${item.title}</strong>
+            <span style="font-size: 0.78rem; color: var(--color-text-muted);">${item.typeLabel}</span>
+          </div>
+          <div style="font-size: 0.85rem; color: var(--color-text-secondary); margin-top: var(--space-xs);">${item.subtitle}</div>
+        </a>
+      `).join('');
+    }
+  }
+
+  input.addEventListener('input', doSearch);
+  doSearch();
+</script>
+
+<!-- Embed search data as JSON -->
+<script type="application/json" id="search-data">
+{JSON.stringify(items)}
+</script>

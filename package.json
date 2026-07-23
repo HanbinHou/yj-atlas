@@ -1,0 +1,19 @@
+{
+  "name": "aw-arch",
+  "version": "1.0.0",
+  "description": "建筑知识库 — 案例 · 材料 · 书目",
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "postbuild": "npx pagefind --site dist"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^7.0.3",
+    "@pagefind/default-ui": "^1.5.2",
+    "astro": "^7.1.3",
+    "pagefind": "^1.5.2"
+  }
+}

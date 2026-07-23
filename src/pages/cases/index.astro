@@ -1,0 +1,55 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import CaseCard from '../../components/CaseCard.astro';
+import FilterPanel from '../../components/FilterPanel.astro';
+
+const allCases = await getCollection('cases');
+
+// Extract unique filter values
+const architects = [...new Set(allCases.map(c => c.data.architect))].sort();
+const types = [...new Set(allCases.map(c => c.data.type))].sort();
+const allMatNames = [...new Set(allCases.flatMap(c => c.data.materials))].sort();
+const locations = [...new Set(allCases.map(c => c.data.location))].sort();
+const allTags = [...new Set(allCases.flatMap(c => c.data.tags))].sort();
+const yearsList = allCases.map(c => c.data.year);
+const yearMin = Math.min(...yearsList);
+const yearMax = Math.max(...yearsList);
+---
+
+<BaseLayout
+  title="案例"
+  description="建筑案例研究库 — 按建筑师、材料、类型、地点筛选"
+>
+  <div class="container" style="padding-top: var(--space-xl);">
+    <h1 style="margin-bottom: var(--space-lg);">案例</h1>
+
+    <FilterPanel
+      contentType="cases"
+      allArchitects={architects}
+      allTypes={types}
+      allMaterials={allMatNames}
+      allLocations={locations}
+      allTags={allTags}
+      years={{ min: yearMin, max: yearMax }}
+    />
+
+    <div class="card-grid">
+      {allCases.map(c => (
+        <div
+          data-card
+          data-card-data={JSON.stringify({
+            architect: c.data.architect,
+            type: c.data.type,
+            materials: c.data.materials,
+            location: c.data.location,
+            year: c.data.year,
+            tags: c.data.tags,
+          })}
+        >
+          <CaseCard case={c} />
+        </div>
+      ))}
+    </div>
+  </div>
+</BaseLayout>

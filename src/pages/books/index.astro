@@ -1,0 +1,100 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+import BookCard from '../../components/BookCard.astro';
+
+const allBooks = await getCollection('books');
+const categories = [...new Set(allBooks.map(b => b.data.category))].sort();
+const readingPaths = ['beginner', 'intermediate', 'advanced'] as const;
+const pathLabels: Record<string, string> = { beginner: '入门', intermediate: '进阶', advanced: '深度' };
+---
+
+<BaseLayout
+  title="书目"
+  description="建筑阅读书目 — 按类别、阅读路径浏览"
+>
+  <div class="container" style="padding-top: var(--space-xl);">
+    <h1 style="margin-bottom: var(--space-lg);">书目</h1>
+
+    <div style="display: flex; flex-wrap: wrap; gap: var(--space-lg); margin-bottom: var(--space-lg);">
+      <!-- Category filters -->
+      <div>
+        <span style="font-size: 0.78rem; color: var(--color-text-muted); letter-spacing: 0.04em; text-transform: uppercase; display: block; margin-bottom: var(--space-xs);">分类</span>
+        <div class="tag-list" id="category-filters">
+          <span class="tag tag-filter active" data-category="" style="cursor:pointer;" role="button" tabindex="0">全部</span>
+          {categories.map(cat => (
+            <span class="tag tag-filter" data-category={cat} style="cursor:pointer;" role="button" tabindex="0">{cat}</span>
+          ))}
+        </div>
+      </div>
+
+      <!-- Reading path filters -->
+      <div>
+        <span style="font-size: 0.78rem; color: var(--color-text-muted); letter-spacing: 0.04em; text-transform: uppercase; display: block; margin-bottom: var(--space-xs);">阅读路径</span>
+        <div class="tag-list" id="path-filters">
+          <span class="tag tag-filter active" data-path="" style="cursor:pointer;" role="button" tabindex="0">全部</span>
+          {readingPaths.map(p => (
+            <span class="tag tag-filter" data-path={p} style="cursor:pointer;" role="button" tabindex="0">{pathLabels[p]}</span>
+          ))}
+        </div>
+      </div>
+    </div>
+
+    <p class="result-count" id="result-count"></p>
+
+    <div class="card-grid">
+      {allBooks.map(b => (
+        <div data-card data-category={b.data.category} data-path={b.data.readingPath}>
+          <BookCard book={b} />
+        </div>
+      ))}
+    </div>
+  </div>
+</BaseLayout>
+
+<script>
+  const catTags = document.querySelectorAll('#category-filters .tag-filter');
+  const pathTags = document.querySelectorAll('#path-filters .tag-filter');
+  const cards = document.querySelectorAll<HTMLElement>('[data-card]');
+  const resultCount = document.getElementById('result-count');
+
+  let activeCategory = '';
+  let activePath = '';
+
+  function updateCount() {
+    const visible = document.querySelectorAll('[data-card]:not([hidden])').length;
+    const total = cards.length;
+    if (resultCount) {
+      resultCount.textContent = visible === total ? `共 ${total} 本` : `显示 ${visible} / ${total} 本`;
+    }
+  }
+
+  function applyFilters() {
+    cards.forEach(card => {
+      const matchCat = !activeCategory || card.dataset.category === activeCategory;
+      const matchPath = !activePath || card.dataset.path === activePath;
+      card.hidden = !(matchCat && matchPath);
+    });
+    updateCount();
+  }
+
+  catTags.forEach(tag => {
+    tag.addEventListener('click', () => {
+      catTags.forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+      activeCategory = tag.dataset.category || '';
+      applyFilters();
+    });
+  });
+
+  pathTags.forEach(tag => {
+    tag.addEventListener('click', () => {
+      pathTags.forEach(t => t.classList.remove('active'));
+      tag.classList.add('active');
+      activePath = tag.dataset.path || '';
+      applyFilters();
+    });
+  });
+
+  updateCount();
+</script>

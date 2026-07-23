@@ -1,0 +1,15 @@
+---
+const currentPath = Astro.url.pathname;
+---
+
+<header class="site-header">
+  <div class="header-inner">
+    <a href="/" class="site-title">YJ Atlas</a>
+    <nav class="site-nav">
+      <a href="/cases/" class={currentPath.startsWith('/cases') ? 'active' : ''}>案例</a>
+      <a href="/materials/" class={currentPath.startsWith('/materials') ? 'active' : ''}>材料</a>
+      <a href="/books/" class={currentPath.startsWith('/books') ? 'active' : ''}>书目</a>
+      <a href="/search/" class={currentPath.startsWith('/search') ? 'active' : ''}>搜索</a>
+    </nav>
+  </div>
+</header>

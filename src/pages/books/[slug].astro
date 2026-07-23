@@ -1,0 +1,225 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const books = await getCollection('books');
+  return books.map(b => ({ params: { slug: b.id } }));
+}
+
+const { slug } = Astro.params;
+const books = await getCollection('books');
+const book = books.find(b => b.id === slug)!;
+
+const pathLabels: Record<string, string> = { beginner: '入门', intermediate: '进阶', advanced: '深度' };
+const hasLockedContent = !!(book.data.unlockCode && book.data.hiddenContent);
+---
+
+<BaseLayout title={book.data.title} description={book.data.summary}>
+  <article class="content-container" style="padding-top: var(--space-xl);">
+    <header class="detail-header">
+      <h1 class="detail-title">{book.data.title}</h1>
+
+      <div class="detail-meta">
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">作者</span>
+          <span>{book.data.author}</span>
+        </div>
+        {book.data.year && (
+          <div class="detail-meta-item">
+            <span class="detail-meta-label">出版年份</span>
+            <span>{book.data.year}</span>
+          </div>
+        )}
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">分类</span>
+          <span>{book.data.category}</span>
+        </div>
+        {book.data.price && (
+          <div class="detail-meta-item">
+            <span class="detail-meta-label">价格</span>
+            <span style="color: var(--color-accent);">&yen;{book.data.price}</span>
+          </div>
+        )}
+      </div>
+
+      <div class="tag-list" style="margin-top: var(--space-md);">
+        <span class={`reading-path ${book.data.readingPath}`}>
+          {pathLabels[book.data.readingPath]}
+        </span>
+        {book.data.tags.map(t => <span class="tag">{t}</span>)}
+      </div>
+    </header>
+
+    {book.data.coverImage && (
+      <img class="detail-image" src={book.data.coverImage} alt={book.data.title}
+        style="max-width: 300px; margin: 0 auto var(--space-lg);" />
+    )}
+
+    <div class="detail-content">
+      <h2>摘要</h2>
+      <p>{book.data.summary}</p>
+      <Fragment set:html={book.rendered?.html || book.body || ''} />
+    </div>
+
+    <!-- Locked content section -->
+    {hasLockedContent && (
+      <section class="unlock-section" id="unlock-section" data-slug={book.id} data-code={book.data.unlockCode || ''}>
+        <div class="unlock-box" id="unlock-box">
+          <div class="unlock-header">
+            <span class="unlock-icon">&#128274;</span>
+            <h3>付费内容</h3>
+          </div>
+          <p class="unlock-desc">购买后可查看下载链接。价格：<strong>&yen;{book.data.price}</strong></p>
+          <div class="unlock-form">
+            <input
+              type="text"
+              id="unlock-code-input"
+              class="unlock-input"
+              placeholder="请输入解锁码……"
+              autocomplete="off"
+            />
+            <button id="unlock-btn" class="unlock-btn">解锁</button>
+          </div>
+          <p class="unlock-hint" id="unlock-hint" style="display:none; color: #c62828; font-size: 0.85rem;">解锁码不正确</p>
+          <p class="unlock-footer">获取解锁码：关注公众号 <strong>咏迹探所</strong> 回复「{book.data.title}」</p>
+        </div>
+
+        <!-- Unlocked content (hidden by default) -->
+        <div class="unlocked-content" id="unlocked-content" style="display:none;">
+          <div class="unlocked-banner">
+            <span style="font-size: 1.2rem;">&#9989;</span> 已解锁
+          </div>
+          {book.data.hiddenImage && (
+            <img src={book.data.hiddenImage} alt="" style="max-width: 100%; margin-bottom: var(--space-md); border: 1px solid var(--color-border);" />
+          )}
+          <div class="detail-content" set:html={book.data.hiddenContent || ''} />
+        </div>
+      </section>
+    )}
+  </article>
+</BaseLayout>
+
+<script>
+  const section = document.getElementById('unlock-section');
+  const slug = section?.dataset.slug || '';
+  const correctCode = section?.dataset.code || '';
+  const storageKey = `yjatlas_unlock_${slug}`;
+
+  const unlockBox = document.getElementById('unlock-box');
+  const unlockedContent = document.getElementById('unlocked-content');
+  const unlockInput = document.getElementById('unlock-code-input') as HTMLInputElement;
+  const unlockBtn = document.getElementById('unlock-btn');
+  const unlockHint = document.getElementById('unlock-hint');
+
+  // Check if already unlocked
+  if (localStorage.getItem(storageKey) === 'true') {
+    if (unlockBox) unlockBox.style.display = 'none';
+    if (unlockedContent) unlockedContent.style.display = 'block';
+  }
+
+  unlockBtn?.addEventListener('click', () => {
+    if (unlockInput?.value.trim() === correctCode) {
+      localStorage.setItem(storageKey, 'true');
+      if (unlockBox) unlockBox.style.display = 'none';
+      if (unlockedContent) unlockedContent.style.display = 'block';
+      if (unlockHint) unlockHint.style.display = 'none';
+    } else {
+      if (unlockHint) unlockHint.style.display = 'block';
+    }
+  });
+
+  unlockInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') unlockBtn?.click();
+  });
+</script>
+
+<style>
+  .unlock-section {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .unlock-box {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: var(--space-lg);
+    text-align: center;
+  }
+
+  .unlock-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+
+  .unlock-header h3 {
+    font-weight: 400;
+  }
+
+  .unlock-icon {
+    font-size: 1.2rem;
+  }
+
+  .unlock-desc {
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: var(--space-md);
+  }
+
+  .unlock-form {
+    display: flex;
+    gap: var(--space-sm);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  .unlock-input {
+    padding: 8px 14px;
+    border: 1px solid var(--color-border);
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    min-width: 200px;
+    border-radius: var(--radius);
+  }
+
+  .unlock-input:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+
+  .unlock-btn {
+    padding: 8px 24px;
+    background: var(--color-text);
+    color: var(--color-surface);
+    border: none;
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    cursor: pointer;
+    letter-spacing: 0.04em;
+    border-radius: var(--radius);
+    transition: background 0.2s;
+  }
+
+  .unlock-btn:hover {
+    background: var(--color-accent-dark);
+  }
+
+  .unlock-footer {
+    margin-top: var(--space-md);
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+
+  .unlocked-banner {
+    background: #e8f5e9;
+    color: #2e7d32;
+    padding: var(--space-sm) var(--space-md);
+    text-align: center;
+    margin-bottom: var(--space-md);
+    font-size: 0.9rem;
+  }
+</style>

@@ -1,0 +1,86 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const cases = await getCollection('cases');
+  return cases.map(c => ({ params: { slug: c.id } }));
+}
+
+const { slug } = Astro.params;
+const cases = await getCollection('cases');
+const case_ = cases.find(c => c.id === slug)!;
+
+// Collect all unique filter values for this case
+const materials = await getCollection('materials');
+const relatedMaterials = materials.filter(m =>
+  case_.data.materials.includes(m.data.title)
+);
+---
+
+<BaseLayout title={case_.data.title} description={case_.data.description}>
+  <article class="content-container" style="padding-top: var(--space-xl);">
+    <header class="detail-header">
+      <h1 class="detail-title">{case_.data.title}</h1>
+
+      <div class="detail-meta">
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">建筑师</span>
+          <span>{case_.data.architect}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">年份</span>
+          <span>{case_.data.year}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">地点</span>
+          <span>{case_.data.location}</span>
+        </div>
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">类型</span>
+          <span>{case_.data.type}</span>
+        </div>
+        {case_.data.status && (
+          <div class="detail-meta-item">
+            <span class="detail-meta-label">状态</span>
+            <span>{case_.data.status}</span>
+          </div>
+        )}
+      </div>
+
+      <div class="tag-list" style="margin-top: var(--space-md);">
+        <span class="tag">{case_.data.type}</span>
+        {case_.data.materials.map(m => <span class="tag">{m}</span>)}
+        {case_.data.tags.map(t => <span class="tag">{t}</span>)}
+      </div>
+    </header>
+
+    {case_.data.images.length > 0 && (
+      <img class="detail-image" src={case_.data.images[0]} alt={case_.data.title} />
+    )}
+
+    <div class="detail-content" set:html={case_.rendered?.html || case_.body || ''} />
+
+    {case_.data.images.length > 1 && (
+      <section style="margin-top: var(--space-xl);">
+        <h3 style="margin-bottom: var(--space-md);">更多图片</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-md);">
+          {case_.data.images.slice(1).map(img => (
+            <img src={img} alt={case_.data.title} style="border: 1px solid var(--color-border);" loading="lazy" />
+          ))}
+        </div>
+      </section>
+    )}
+
+    {relatedMaterials.length > 0 && (
+      <section class="related-section">
+        <h3>相关材料</h3>
+        <ul class="related-list">
+          {relatedMaterials.map(m => (
+            <li><a href={`/materials/${m.id}/`}>{m.data.title}</a></li>
+          ))}
+        </ul>
+      </section>
+    )}
+  </article>
+</BaseLayout>

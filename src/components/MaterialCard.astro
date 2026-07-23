@@ -1,0 +1,23 @@
+---
+import type { CollectionEntry } from 'astro:content';
+const { material: m } = Astro.props;
+---
+
+<article class="card">
+  <a href={`/materials/${m.id}/`}>
+    {m.data.image ? (
+      <img class="card-image" src={m.data.image} alt={m.data.title} loading="lazy" />
+    ) : (
+      <div class="card-image-placeholder">{m.data.title[0]}</div>
+    )}
+    <div class="card-body">
+      <h3 class="card-title">{m.data.title}</h3>
+      <div class="card-meta">
+        <span>{m.data.category}</span>
+      </div>
+      <div class="tag-list">
+        {m.data.tags.slice(0, 3).map(t => <span class="tag">{t}</span>)}
+      </div>
+    </div>
+  </a>
+</article>

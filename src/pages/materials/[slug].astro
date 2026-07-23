@@ -1,0 +1,102 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const materials = await getCollection('materials');
+  return materials.map(m => ({ params: { slug: m.id } }));
+}
+
+const { slug } = Astro.params;
+const materials = await getCollection('materials');
+const material = materials.find(m => m.id === slug)!;
+
+// Find related cases
+const allCases = await getCollection('cases');
+const relatedCases = allCases.filter(c =>
+  c.data.materials.includes(material.data.title)
+);
+---
+
+<BaseLayout title={material.data.title} description={material.data.description}>
+  <article class="content-container" style="padding-top: var(--space-xl);">
+    <header class="detail-header">
+      <h1 class="detail-title">{material.data.title}</h1>
+
+      <div class="detail-meta">
+        <div class="detail-meta-item">
+          <span class="detail-meta-label">类别</span>
+          <span>{material.data.category}</span>
+        </div>
+        {material.data.subcategory && (
+          <div class="detail-meta-item">
+            <span class="detail-meta-label">子类</span>
+            <span>{material.data.subcategory}</span>
+          </div>
+        )}
+      </div>
+
+      <div class="tag-list" style="margin-top: var(--space-md);">
+        {material.data.scenarios.map(s => <span class="tag">{s}</span>)}
+        {material.data.tags.map(t => <span class="tag">{t}</span>)}
+      </div>
+    </header>
+
+    {material.data.image && (
+      <img class="detail-image" src={material.data.image} alt={material.data.title} />
+    )}
+
+    <div class="detail-content" set:html={material.rendered?.html || material.body || ''} />
+
+    {material.data.properties.length > 0 && (
+      <section style="margin-top: var(--space-lg);">
+        <h3>性能参数</h3>
+        <table class="prop-table">
+          <tbody>
+            {material.data.properties.map(p => (
+              <tr>
+                <th>{p.name}</th>
+                <td>{p.value}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+    )}
+
+    {material.data.supplier && (
+      <section style="margin-top: var(--space-lg);">
+        <h3>供应商</h3>
+        <p>
+          {material.data.supplier.url ? (
+            <a href={material.data.supplier.url} target="_blank" rel="noopener">
+              {material.data.supplier.name}
+            </a>
+          ) : (
+            material.data.supplier.name
+          )}
+        </p>
+      </section>
+    )}
+
+    {material.data.scenarios.length > 0 && (
+      <section style="margin-top: var(--space-lg);">
+        <h3>适用场景</h3>
+        <ul class="related-list">
+          {material.data.scenarios.map(s => <li>{s}</li>)}
+        </ul>
+      </section>
+    )}
+
+    {relatedCases.length > 0 && (
+      <section class="related-section">
+        <h3>关联案例</h3>
+        <ul class="related-list">
+          {relatedCases.map(c => (
+            <li><a href={`/cases/${c.id}/`}>{c.data.title}</a> — {c.data.architect}</li>
+          ))}
+        </ul>
+      </section>
+    )}
+  </article>
+</BaseLayout>
