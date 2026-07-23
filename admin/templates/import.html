@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="page-title">📥 从爬虫导入案例</h2>
+
+<div class="card">
+  <h3>选择爬虫日期文件夹</h3>
+  <div class="form-row">
+    <div class="form-group" style="flex:1;">
+      <label>文件夹路径</label>
+      <input type="text" id="crawler-folder" placeholder="例如：Y:\HouHanbin\afasia\2026-07-23" />
+    </div>
+    <div class="form-group" style="align-self: flex-end;">
+      <button class="btn btn-primary" onclick="scanFolder()">扫描项目</button>
+    </div>
+  </div>
+  <div style="font-size: 0.8rem; color: var(--text3);">
+    提示：爬虫每天输出在 Y:\HouHanbin\afasia\YYYY-MM-DD\ 下，每个子文件夹=一个建筑师项目
+  </div>
+</div>
+
+<div id="projects-area"></div>
+
+<script>
+  async function scanFolder() {
+    const folder = document.getElementById('crawler-folder').value.trim();
+    if (!folder) { toast('请输入文件夹路径', 'error'); return; }
+    const area = document.getElementById('projects-area');
+    area.innerHTML = '<p style="color: var(--text2);">扫描中...</p>';
+    const projects = await api('POST', '/api/scan-crawler', { folder });
+    if (projects.error) { area.innerHTML = `<p style="color: var(--red);">${projects.error}</p>`; return; }
+    if (!projects.length) { area.innerHTML = '<p style="color: var(--text2);">未找到任何项目</p>'; return; }
+
+    area.innerHTML = `<h3 style="margin: 1.5rem 0 0.8rem; font-weight: 400;">找到 ${projects.length} 个项目</h3>` +
+      projects.map((p, i) => {
+        const fm = p.frontmatter || {};
+        const desc = p.body ? p.body.substring(0, 200) + '...' : '(无描述)';
+        const thumb = p.images.length > 0 ? `/api/thumbnail?path=${encodeURIComponent(p.path + '/' + p.images[0])}` : '';
+        return `
+        <div class="project-card" id="proj-${i}">
+          ${thumb ? `<img class="thumb" src="${thumb}" onerror="this.style.display='none'" />` : '<div class="thumb"></div>'}
+          <div class="info">
+            <h4>${p.folder}</h4>
+            <p>建筑师: ${fm['建筑师'] || '?'} · 类型: ${fm['类型'] || '?'} · 材料: ${fm['材料'] || '?'}</p>
+            <p style="font-size:0.78rem;color:var(--text3);margin-top:0.3rem;">📷 ${p.image_count} 张图片</p>
+            <p style="font-size:0.8rem;color:var(--text2);margin-top:0.3rem;">${desc}</p>
+          </div>
+          <div class="actions">
+            <button class="btn btn-accent btn-sm" onclick="showImportForm('${p.path.replace(/\\/g,'\\\\')}', ${i})">导入</button>
+          </div>
+        </div>
+        <div id="form-${i}" style="display:none;"></div>`;
+      }).join('');
+  }
+
+  function showImportForm(sourcePath, idx) {
+    const container = document.getElementById(`form-${idx}`);
+    container.innerHTML = `
+      <div class="card" style="margin-top: 0.5rem; border-left: 3px solid var(--accent);">
+        <h3>编辑导入内容</h3>
+        <div class="form-row">
+          <div class="form-group"><label>项目名称</label><input id="imp-title-${idx}" /></div>
+          <div class="form-group"><label>建筑师</label><input id="imp-architect-${idx}" /></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>类型</label><input id="imp-type-${idx}" placeholder="住宅/公共建筑/..." /></div>
+          <div class="form-group"><label>年份</label><input id="imp-year-${idx}" type="number" value="2025" /></div>
+          <div class="form-group"><label>地点</label><input id="imp-location-${idx}" /></div>
+        </div>
+        <div class="form-group"><label>材料（逗号分隔）</label><input id="imp-materials-${idx}" /></div>
+        <div class="form-group"><label>标签（逗号分隔）</label><input id="imp-tags-${idx}" /></div>
+        <div class="form-group"><label>一句话描述</label><input id="imp-desc-${idx}" /></div>
+        <div class="form-group"><label>正文（Markdown，可编辑）</label><textarea id="imp-body-${idx}" rows="6"></textarea></div>
+        <button class="btn btn-accent" onclick="doImport('${sourcePath.replace(/\\/g,'\\\\')}', ${idx})">确认导入</button>
+        <button class="btn btn-outline" onclick="document.getElementById('form-${idx}').style.display='none'" style="margin-left: 0.5rem;">取消</button>
+      </div>
+    `;
+    container.style.display = 'block';
+
+    // Auto-fill from metadata
+    fetch('/api/scan-crawler', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({folder: sourcePath.substring(0, sourcePath.lastIndexOf('\\'))}) })
+      .then(r => r.json()).then(projects => {
+        const proj = projects.find(p => p.path === sourcePath);
+        if (!proj) return;
+        const fm = proj.frontmatter;
+        document.getElementById(`imp-title-${idx}`).value = proj.folder;
+        document.getElementById(`imp-architect-${idx}`).value = fm['建筑师'] || '';
+        document.getElementById(`imp-type-${idx}`).value = fm['类型'] || '';
+        document.getElementById(`imp-materials-${idx}`).value = fm['材料'] || '';
+        document.getElementById(`imp-body-${idx}`).value = proj.body || '';
+        // Try to parse year, location from body
+        const bodyText = proj.body || '';
+        const locationMatch = bodyText.match(/位于([^\s，。]+)/);
+        if (locationMatch) document.getElementById(`imp-location-${idx}`).value = locationMatch[1];
+      });
+  }
+
+  async function doImport(sourcePath, idx) {
+    const title = document.getElementById(`imp-title-${idx}`).value;
+    const materials = document.getElementById(`imp-materials-${idx}`).value.split(/[,，]/).map(s=>s.trim()).filter(Boolean);
+    const tags = document.getElementById(`imp-tags-${idx}`).value.split(/[,，]/).map(s=>s.trim()).filter(Boolean);
+
+    const result = await api('POST', '/api/import-case', {
+      source_folder: sourcePath,
+      title,
+      architect: document.getElementById(`imp-architect-${idx}`).value,
+      type: document.getElementById(`imp-type-${idx}`).value,
+      materials,
+      location: document.getElementById(`imp-location-${idx}`).value,
+      year: parseInt(document.getElementById(`imp-year-${idx}`).value) || 2025,
+      tags,
+      description: document.getElementById(`imp-desc-${idx}`).value,
+      body: document.getElementById(`imp-body-${idx}`).value,
+      include_images: true,
+    });
+
+    if (result.ok) {
+      toast(`导入成功！${result.images_copied} 张图片已处理`);
+      document.getElementById(`form-${idx}`).style.display = 'none';
+      document.getElementById(`proj-${idx}`).style.opacity = '0.5';
+    } else {
+      toast('导入失败: ' + (result.error || '未知错误'), 'error');
+    }
+  }
+</script>
+{% endblock %}

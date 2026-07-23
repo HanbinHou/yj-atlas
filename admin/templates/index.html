@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="page-title">📊 面板</h2>
+
+<div class="stat-grid" id="stats"></div>
+
+<div class="card">
+  <h3>🚀 一键发布</h3>
+  <p style="color: var(--text2); margin-bottom: 1rem;">构建网站 → 部署到 Netlify → Git 备份</p>
+  <button class="btn btn-accent" onclick="doPublish()">立即发布</button>
+  <div id="publish-log" style="margin-top: 1rem;"></div>
+</div>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+  <div class="card">
+    <h3>👁️ 本地预览</h3>
+    <p style="color: var(--text2); margin-bottom: 1rem;">在浏览器预览当前内容</p>
+    <button class="btn btn-outline" onclick="startPreview()">启动预览</button>
+    <span id="preview-status" style="margin-left: 0.5rem; font-size: 0.85rem; color: var(--text2);"></span>
+  </div>
+  <div class="card">
+    <h3>📂 快捷入口</h3>
+    <p style="color: var(--text2); margin-bottom: 1rem;">在资源管理器打开文件夹</p>
+    <button class="btn btn-outline btn-sm" onclick="api('POST','/api/open-folder/src/content/cases')">案例目录</button>
+    <button class="btn btn-outline btn-sm" onclick="api('POST','/api/open-folder/public/images')">图片目录</button>
+    <button class="btn btn-outline btn-sm" onclick="api('POST','/api/open-folder/src/content')">内容根目录</button>
+  </div>
+</div>
+
+<script>
+  async function loadStats() {
+    const [cases, materials, books] = await Promise.all([
+      api('GET', '/api/content/cases'),
+      api('GET', '/api/content/materials'),
+      api('GET', '/api/content/books'),
+    ]);
+    document.getElementById('stats').innerHTML = `
+      <div class="stat-card"><div class="num">${cases.length}</div><div class="label">案例</div></div>
+      <div class="stat-card"><div class="num">${materials.length}</div><div class="label">材料</div></div>
+      <div class="stat-card"><div class="num">${books.length}</div><div class="label">书目</div></div>
+      <div class="stat-card"><div class="num">${cases.length + materials.length + books.length}</div><div class="label">总计</div></div>
+    `;
+  }
+
+  async function doPublish() {
+    const logDiv = document.getElementById('publish-log');
+    logDiv.innerHTML = '<div class="log-box"><span class="status"><span class="status-dot running"></span> 正在发布...</span></div>';
+    const result = await api('POST', '/api/publish');
+    let html = '<div class="log-box">';
+    for (const step of result.steps) {
+      const icon = step.status === 'ok' ? '✅' : step.status === 'running' ? '⏳' : '❌';
+      html += `${icon} <strong>${step.step}</strong>\n`;
+      if (step.output) html += step.output + '\n';
+      if (step.url) html += `\n🌐 ${step.url}\n`;
+    }
+    html += '</div>';
+    logDiv.innerHTML = html;
+    toast('发布完成！');
+  }
+
+  async function startPreview() {
+    document.getElementById('preview-status').innerHTML = '<span class="status-dot running"></span> 启动中...';
+    const result = await api('POST', '/api/preview');
+    if (result.already_running) {
+      document.getElementById('preview-status').innerHTML = `<a href="${result.url}" target="_blank">${result.url}</a> (已运行)`;
+    } else {
+      setTimeout(() => {
+        document.getElementById('preview-status').innerHTML = `<a href="${result.url}" target="_blank">${result.url}</a>`;
+      }, 2000);
+    }
+  }
+
+  loadStats();
+</script>
+{% endblock %}

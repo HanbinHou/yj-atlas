@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="page-title">{{ title }}</h2>
+
+<div style="margin-bottom: 1rem;">
+  <button class="btn btn-accent" onclick="showAddForm()">+ 新增{{ label }}</button>
+  <button class="btn btn-outline" onclick="location.reload()" style="margin-left:0.5rem;">刷新</button>
+</div>
+
+<div id="add-form" class="card" style="display:none;">
+  <h3>新增{{ label }}</h3>
+  <div id="add-form-fields"></div>
+  <button class="btn btn-accent" onclick="saveNew()">保存</button>
+  <button class="btn btn-outline" onclick="document.getElementById('add-form').style.display='none'" style="margin-left:0.5rem;">取消</button>
+</div>
+
+<table id="content-table">
+  <thead>
+    <tr><th>标题</th><th>分类/类型</th><th>标签</th><th>操作</th></tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script>
+  const TYPE = '{{ type }}';
+  const LABEL = '{{ label }}';
+
+  const caseFields = `
+    <div class="form-row"><div class="form-group"><label>标题</label><input id="f-title" /></div><div class="form-group"><label>建筑师</label><input id="f-architect" /></div></div>
+    <div class="form-row"><div class="form-group"><label>类型</label><input id="f-type" /></div><div class="form-group"><label>年份</label><input id="f-year" type="number" value="2025" /></div><div class="form-group"><label>地点</label><input id="f-location" /></div></div>
+    <div class="form-group"><label>材料 (逗号分隔)</label><input id="f-materials" /></div>
+    <div class="form-group"><label>标签 (逗号分隔)</label><input id="f-tags" /></div>
+    <div class="form-group"><label>一句话描述</label><input id="f-description" /></div>
+    <div class="form-group"><label>正文 (Markdown)</label><textarea id="f-body" rows="4"></textarea></div>
+  `;
+
+  const materialFields = `
+    <div class="form-row"><div class="form-group"><label>名称</label><input id="f-title" /></div><div class="form-group"><label>类别</label><input id="f-category" /></div></div>
+    <div class="form-group"><label>适用场景 (逗号分隔)</label><input id="f-scenarios" /></div>
+    <div class="form-group"><label>标签</label><input id="f-tags" /></div>
+    <div class="form-group"><label>描述</label><input id="f-description" /></div>
+    <div class="form-group"><label>正文 (Markdown)</label><textarea id="f-body" rows="4"></textarea></div>
+  `;
+
+  const bookFields = `
+    <div class="form-row"><div class="form-group"><label>书名</label><input id="f-title" /></div><div class="form-group"><label>作者</label><input id="f-author" /></div></div>
+    <div class="form-row"><div class="form-group"><label>分类</label><input id="f-category" /></div><div class="form-group"><label>阅读路径</label><select id="f-readingPath"><option value="beginner">入门</option><option value="intermediate" selected>进阶</option><option value="advanced">深度</option></select></div><div class="form-group"><label>出版年份</label><input id="f-year" type="number" /></div></div>
+    <div class="form-group"><label>标签</label><input id="f-tags" /></div>
+    <div class="form-group"><label>摘要</label><input id="f-summary" /></div>
+    <div class="form-group"><label>价格 (¥，可选)</label><input id="f-price" type="number" /></div>
+    <div class="form-group"><label>解锁码 (可选)</label><input id="f-unlockCode" /></div>
+    <div class="form-group"><label>正文 (Markdown)</label><textarea id="f-body" rows="4"></textarea></div>
+  `;
+
+  function showAddForm() {
+    document.getElementById('add-form').style.display = 'block';
+    const fields = TYPE === 'cases' ? caseFields : TYPE === 'materials' ? materialFields : bookFields;
+    document.getElementById('add-form-fields').innerHTML = fields;
+  }
+
+  async function saveNew() {
+    const title = document.getElementById('f-title').value;
+    if (!title) { toast('请输入标题', 'error'); return; }
+
+    let frontmatter = {};
+    if (TYPE === 'cases') {
+      frontmatter = {
+        title, architect: document.getElementById('f-architect').value,
+        year: parseInt(document.getElementById('f-year').value) || 2025,
+        type: document.getElementById('f-type').value,
+        materials: document.getElementById('f-materials').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        location: document.getElementById('f-location').value,
+        tags: document.getElementById('f-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        description: document.getElementById('f-description').value,
+        images: [],
+      };
+    } else if (TYPE === 'materials') {
+      frontmatter = {
+        title, category: document.getElementById('f-category').value,
+        scenarios: document.getElementById('f-scenarios').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        tags: document.getElementById('f-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        description: document.getElementById('f-description').value,
+        properties: [],
+      };
+    } else {
+      frontmatter = {
+        title, author: document.getElementById('f-author').value,
+        category: document.getElementById('f-category').value,
+        readingPath: document.getElementById('f-readingPath').value,
+        year: parseInt(document.getElementById('f-year').value) || null,
+        tags: document.getElementById('f-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        summary: document.getElementById('f-summary').value,
+        price: parseFloat(document.getElementById('f-price').value) || undefined,
+        unlockCode: document.getElementById('f-unlockCode').value || undefined,
+      };
+    }
+
+    const body = document.getElementById('f-body').value;
+    const result = await api('POST', `/api/save/${TYPE}`, { frontmatter, body });
+    if (result.ok) { toast('保存成功'); document.getElementById('add-form').style.display = 'none'; loadList(); }
+    else { toast('保存失败', 'error'); }
+  }
+
+  async function deleteItem(filename) {
+    if (!confirm('确认删除？')) return;
+    await api('DELETE', `/api/content/${TYPE}/${filename}`);
+    toast('已删除');
+    loadList();
+  }
+
+  async function loadList() {
+    const items = await api('GET', `/api/content/${TYPE}`);
+    const tbody = document.querySelector('#content-table tbody');
+    tbody.innerHTML = items.map(item => {
+      const fm = item.frontmatter || {};
+      const typeStr = TYPE === 'cases' ? (fm.type || '') : TYPE === 'materials' ? (fm.category || '') : (fm.category || '') + ' · ' + (fm.readingPath || '');
+      const tags = (fm.tags || []).slice(0, 3).join(', ');
+      return `<tr>
+        <td><strong>${fm.title || item.slug}</strong></td>
+        <td>${typeStr}</td>
+        <td style="color:var(--text2);font-size:0.82rem;">${tags}</td>
+        <td>
+          <button class="btn btn-outline btn-sm" onclick="deleteItem('${item.filename}')">删除</button>
+        </td>
+      </tr>`;
+    }).join('');
+    if (!items.length) tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text3);text-align:center;">暂无内容</td></tr>';
+  }
+
+  loadList();
+</script>
+{% endblock %}

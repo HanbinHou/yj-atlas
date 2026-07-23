@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YJ Atlas 管理后台</title>
+  <style>
+    :root {
+      --bg: #fafaf8; --surface: #fff; --text: #1a1a1a;
+      --text2: #6b6b6b; --text3: #9a9a9a; --border: #e8e8e4;
+      --accent: #d4958a; --accent-light: #f5e4e0; --accent-dark: #b87065;
+      --green: #4caf50; --red: #e53935; --blue: #5b9bd5;
+      --radius: 4px; --font: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--text); }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      width: 200px; background: var(--surface); border-right: 1px solid var(--border);
+      padding: 1.5rem 1rem; display: flex; flex-direction: column; gap: 0.3rem;
+    }
+    .sidebar h2 { font-size: 1rem; font-weight: 500; margin-bottom: 1rem; letter-spacing: 0.04em; }
+    .sidebar a {
+      display: block; padding: 0.5rem 0.8rem; font-size: 0.88rem; color: var(--text2);
+      text-decoration: none; border-radius: var(--radius); transition: all .15s;
+    }
+    .sidebar a:hover, .sidebar a.active { background: var(--accent-light); color: var(--accent-dark); }
+    .main { flex: 1; padding: 2rem; overflow-y: auto; }
+    .page-title { font-size: 1.4rem; font-weight: 400; margin-bottom: 1.5rem; letter-spacing: 0.04em; }
+
+    /* Cards */
+    .card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 1.2rem; margin-bottom: 1rem;
+    }
+    .card h3 { font-weight: 400; margin-bottom: 0.8rem; font-size: 1rem; }
+
+    /* Buttons */
+    .btn {
+      display: inline-block; padding: 0.5rem 1.2rem; border: none; border-radius: var(--radius);
+      font-size: 0.88rem; cursor: pointer; font-family: var(--font); letter-spacing: 0.02em;
+      transition: all .15s; text-decoration: none;
+    }
+    .btn-primary { background: var(--text); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-accent { background: var(--accent); color: #fff; }
+    .btn-accent:hover { background: var(--accent-dark); }
+    .btn-outline { background: none; border: 1px solid var(--border); color: var(--text2); }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-danger { background: var(--red); color: #fff; }
+    .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.8rem; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Forms */
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.82rem; color: var(--text2); margin-bottom: 0.25rem; }
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%; padding: 0.5rem 0.7rem; border: 1px solid var(--border); border-radius: var(--radius);
+      font-family: var(--font); font-size: 0.9rem; background: var(--surface);
+    }
+    .form-group textarea { min-height: 120px; resize: vertical; }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none; border-color: var(--accent);
+    }
+    .form-row { display: flex; gap: 1rem; }
+    .form-row .form-group { flex: 1; }
+
+    /* Tags */
+    .tag { display: inline-block; padding: 2px 10px; font-size: 0.78rem; background: var(--bg);
+      border: 1px solid var(--border); border-radius: var(--radius); margin: 2px; }
+    .tag-input-wrap { display: flex; flex-wrap: wrap; gap: 4px; padding: 0.4rem;
+      border: 1px solid var(--border); border-radius: var(--radius); min-height: 36px;
+      align-items: center; cursor: text; }
+    .tag-input-wrap input { border: none; outline: none; flex: 1; min-width: 80px;
+      font-family: var(--font); font-size: 0.85rem; padding: 2px 4px; }
+    .tag-input-wrap:focus-within { border-color: var(--accent); }
+
+    /* Status */
+    .status { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .status-dot.ok { background: var(--green); }
+    .status-dot.error { background: var(--red); }
+    .status-dot.running { background: var(--blue); animation: pulse 1s infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+    /* Log */
+    .log-box {
+      background: #1a1a1a; color: #e0e0e0; font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.82rem; padding: 1rem; border-radius: var(--radius); max-height: 300px;
+      overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    }
+
+    /* Messages */
+    .toast { position: fixed; top: 1rem; right: 1rem; padding: 0.8rem 1.5rem;
+      border-radius: var(--radius); color: #fff; font-size: 0.9rem; z-index: 999;
+      animation: slideIn .3s ease; }
+    .toast.success { background: var(--green); }
+    .toast.error { background: var(--red); }
+    @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--border); font-size: 0.88rem; }
+    th { color: var(--text2); font-weight: 400; font-size: 0.8rem; }
+    tr:hover td { background: var(--bg); }
+
+    /* Stats */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; text-align: center; }
+    .stat-card .num { font-size: 2rem; font-weight: 300; }
+    .stat-card .label { font-size: 0.8rem; color: var(--text2); margin-top: 0.3rem; }
+
+    /* crawler project card */
+    .project-card { display: flex; gap: 1rem; align-items: flex-start;
+      border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem;
+      margin-bottom: 0.8rem; background: var(--surface); }
+    .project-card .thumb { width: 120px; height: 80px; object-fit: cover; border-radius: var(--radius); background: var(--border); }
+    .project-card .info { flex: 1; }
+    .project-card .info h4 { font-weight: 400; margin-bottom: 0.3rem; }
+    .project-card .info p { font-size: 0.82rem; color: var(--text2); }
+    .project-card .actions { display: flex; gap: 0.5rem; align-items: center; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <nav class="sidebar">
+    <h2>YJ Atlas 管理</h2>
+    <a href="/" class="{{ 'active' if request.path == '/' else '' }}">📊 面板</a>
+    <a href="/import" class="{{ 'active' if request.path == '/import' else '' }}">📥 导入爬虫</a>
+    <a href="/cases" class="{{ 'active' if request.path.startswith('/cases') else '' }}">🏛️ 案例管理</a>
+    <a href="/materials" class="{{ 'active' if request.path.startswith('/materials') else '' }}">🧱 材料管理</a>
+    <a href="/books" class="{{ 'active' if request.path.startswith('/books') else '' }}">📚 书目管理</a>
+  </nav>
+  <div class="main">
+    {% block content %}{% endblock %}
+  </div>
+</div>
+<div id="toast-area"></div>
+<script>
+  function toast(msg, type='success') {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    document.getElementById('toast-area').appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+  async function api(method, url, body) {
+    const opts = { method, headers: {'Content-Type': 'application/json'} };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(url, opts);
+    return res.json();
+  }
+</script>
+</body>
+</html>
