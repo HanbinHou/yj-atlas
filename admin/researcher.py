@@ -1,6 +1,5 @@
 """
-AI Research Module — 根据项目名称搜索建筑信息 + 图片，生成标准格式 Markdown
-使用 DeepSeek API（OpenAI 兼容接口）
+AI Research Module — SearXNG 全网搜索 + DeepSeek 结构化提取 + 图片下载
 """
 import json
 import re
@@ -16,11 +15,11 @@ PUBLIC_IMG = BASE_DIR / "public" / "images"
 
 DEEPSEEK_BASE = "https://api.deepseek.com"
 DEEPSEEK_MODEL = "deepseek-chat"
+SEARXNG_URL = "http://localhost:8888"
 
 # ── config ────────────────────────────────────────────
 
 def get_api_key() -> str:
-    """Read DeepSeek API key from config file."""
     config_file = Path(__file__).parent / "api_key.txt"
     if config_file.exists():
         return config_file.read_text(encoding="utf-8").strip()
@@ -28,6 +27,47 @@ def get_api_key() -> str:
 
 def set_api_key(key: str):
     (Path(__file__).parent / "api_key.txt").write_text(key.strip(), encoding="utf-8")
+
+# ── SearXNG search ────────────────────────────────────
+
+def _ddgs_search(query: str, count: int = 8) -> list[dict]:
+    """Fallback: DuckDuckGo search."""
+    try:
+        from duckduckgo_search import DDGS
+        results = []
+        for r in DDGS().text(f"{query} architecture", max_results=count):
+            results.append({"url": r.get("href", ""), "title": r.get("title", ""), "body": r.get("body", "")})
+        return results
+    except Exception as e:
+        print(f"[DDGS error] {e}")
+        return []
+
+def searx_search(query: str, category: str = "general", count: int = 10) -> list[dict]:
+    """Search via SearXNG. category: general | images."""
+    try:
+        url = f"{SEARXNG_URL}/search?q={quote(query)}&format=json&categories={category}&pageno=1"
+        req = Request(url, headers={"User-Agent": "YJAtlas/1.0"})
+        data = json.loads(urlopen(req, timeout=15).read())
+        results = data.get("results", [])
+        return results[:count]
+    except Exception as e:
+        print(f"[SearXNG error] {e}")
+        return []
+
+def fetch_page_text(url: str, max_chars: int = 5000) -> str:
+    """Fetch and extract text from a web page."""
+    try:
+        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        html = urlopen(req, timeout=10).read().decode("utf-8", errors="ignore")
+        # Simple tag stripping
+        text = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL|re.IGNORECASE)
+        text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL|re.IGNORECASE)
+        text = re.sub(r'<[^>]+>', ' ', text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text[:max_chars]
+    except Exception as e:
+        print(f"[fetch error] {url}: {e}")
+        return ""
 
 # ── template ──────────────────────────────────────────
 
@@ -121,19 +161,49 @@ def _deepseek_chat(system_prompt: str, user_message: str, max_tokens: int = 4096
 
 
 def research_project(project_name: str) -> dict:
-    """Main entry: research a project and return structured data + image searches."""
+    """Main entry: SearXNG search → fetch pages → DeepSeek extract → structured MD."""
     api_key = get_api_key()
     if not api_key:
         return {"error": "请先在设置页面配置 DeepSeek API Key"}
 
+    # Step 1: Web search via SearXNG (fallback: DuckDuckGo)
+    web_results = searx_search(f"{project_name} architecture building", "general", count=8)
+    if not web_results:
+        web_results = searx_search(project_name, "general", count=8)
+    if not web_results:
+        web_results = _ddgs_search(project_name, count=8)
+
+    # Step 2: Fetch content from top pages
+    page_texts = []
+    for r in web_results[:5]:
+        url = r.get("url", "")
+        text = fetch_page_text(url, 3000)
+        if text:
+            page_texts.append(f"来源: {url}\n标题: {r.get('title','')}\n内容: {text}")
+
+    # Step 3: Build prompt with web sources
+    if page_texts:
+        sources_block = "\n\n---\n\n".join(page_texts)
+        user_message = f"""以下是从互联网搜索"{project_name}"找到的资料：
+
+{sources_block}
+
+请基于以上资料和你的知识，按以下格式输出结构化的建筑案例分析：
+
+{RESEARCH_PROMPT.format(project_name=project_name)}"""
+    else:
+        user_message = RESEARCH_PROMPT.format(project_name=project_name)
+
+    # Step 4: Extract with DeepSeek
     text = _deepseek_chat(
-        system_prompt="你是一位建筑学教授，擅长研究建筑案例并输出结构化的学术内容。回复使用简体中文。务必覆盖所有要求的字段，不要省略任何一个。",
-        user_message=RESEARCH_PROMPT.format(project_name=project_name),
+        system_prompt="你是一位建筑学教授，擅长研究建筑案例并基于搜索资料输出结构化的学术内容。回复使用简体中文。务必覆盖所有要求的字段，不要省略任何一个。",
+        user_message=user_message,
     )
 
     data = parse_response(text)
     data["slug"] = _slugify(data.get("title", project_name))
     data["raw"] = text
+    data["sources_count"] = len(page_texts)
     return data
 
 
@@ -212,46 +282,47 @@ def build_markdown(data: dict) -> str:
     return "\n".join(lines), fm
 
 
-def search_images(query: str, count: int = 5) -> list[str]:
-    """Search for high-quality architecture images using Wikimedia Commons API."""
+def search_images(query: str, count: int = 8) -> list[dict]:
+    """Search images via SearXNG, fallback to Wikimedia Commons."""
     results = []
+
+    # Primary: SearXNG image search
     try:
-        # Wikimedia Commons API
-        search_url = (
-            f"https://commons.wikimedia.org/w/api.php"
-            f"?action=query&list=search&srsearch={quote(query + ' architecture')}"
-            f"&srnamespace=6&format=json&srlimit={count * 3}"
-        )
-        req = Request(search_url, headers={"User-Agent": "YJAtlas/1.0"})
-        data = json.loads(urlopen(req, timeout=15).read())
-
-        pages = [r["title"] for r in data.get("query", {}).get("search", [])]
-
-        # Get image URLs
-        for page_title in pages[:count * 2]:
-            img_url = (
-                f"https://commons.wikimedia.org/w/api.php"
-                f"?action=query&titles={quote(page_title)}"
-                f"&prop=imageinfo&iiprop=url|size&format=json"
-            )
-            img_data = json.loads(urlopen(Request(img_url, headers={"User-Agent": "YJAtlas/1.0"}), timeout=10).read())
-            pages_info = img_data.get("query", {}).get("pages", {})
-            for _pid, pinfo in pages_info.items():
-                ii = pinfo.get("imageinfo", [])
-                if ii:
-                    size = ii[0].get("width", 0)
-                    url = ii[0].get("url", "")
-                    # Filter: prefer high-res (>1200px wide)
-                    if size >= 800 and url:
-                        results.append({"url": url, "width": size, "title": ii[0].get("descriptionurl", "")})
-            if len(results) >= count:
-                break
-
+        img_results = searx_search(f"{query} architecture", "images", count=count)
+        for r in img_results:
+            img_url = r.get("img_src") or r.get("thumbnail_src") or r.get("url", "")
+            if img_url and img_url.startswith("http"):
+                results.append({"url": img_url, "width": 1200, "title": r.get("title", "")})
     except Exception as e:
-        print(f"[image search error] {e}")
+        print(f"[SearXNG image error] {e}")
 
-    # Sort by resolution (prefer larger)
-    results.sort(key=lambda x: x["width"], reverse=True)
+    # Fallback: Wikimedia Commons
+    if len(results) < 3:
+        try:
+            search_url = (
+                f"https://commons.wikimedia.org/w/api.php"
+                f"?action=query&list=search&srsearch={quote(query + ' architecture')}"
+                f"&srnamespace=6&format=json&srlimit={count * 2}"
+            )
+            data = json.loads(urlopen(Request(search_url, headers={"User-Agent": "YJAtlas/1.0"}), timeout=15).read())
+            pages = [r["title"] for r in data.get("query", {}).get("search", [])]
+            for page_title in pages[:count * 2]:
+                img_url = (
+                    f"https://commons.wikimedia.org/w/api.php"
+                    f"?action=query&titles={quote(page_title)}"
+                    f"&prop=imageinfo&iiprop=url|size&format=json"
+                )
+                img_data = json.loads(urlopen(Request(img_url, headers={"User-Agent": "YJAtlas/1.0"}), timeout=10).read())
+                for pinfo in img_data.get("query", {}).get("pages", {}).values():
+                    ii = pinfo.get("imageinfo", [])
+                    if ii and ii[0].get("width", 0) >= 800:
+                        results.append({"url": ii[0]["url"], "width": ii[0]["width"], "title": ii[0].get("descriptionurl", "")})
+                if len(results) >= count:
+                    break
+        except Exception as e:
+            print(f"[Wikimedia error] {e}")
+
+    results.sort(key=lambda x: x.get("width", 0), reverse=True)
     return results[:count]
 
 
