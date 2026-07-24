@@ -31,9 +31,9 @@ def set_api_key(key: str):
 # ── SearXNG search ────────────────────────────────────
 
 def _ddgs_search(query: str, count: int = 8) -> list[dict]:
-    """Fallback: DuckDuckGo search."""
+    """DuckDuckGo web search via ddgs."""
     try:
-        from duckduckgo_search import DDGS
+        from ddgs import DDGS
         results = []
         for r in DDGS().text(f"{query} architecture", max_results=count):
             results.append({"url": r.get("href", ""), "title": r.get("title", ""), "body": r.get("body", "")})
@@ -166,12 +166,10 @@ def research_project(project_name: str) -> dict:
     if not api_key:
         return {"error": "请先在设置页面配置 DeepSeek API Key"}
 
-    # Step 1: Web search via SearXNG (fallback: DuckDuckGo)
-    web_results = searx_search(f"{project_name} architecture building", "general", count=8)
+    # Step 1: Web search via DuckDuckGo (SearXNG → DDGS)
+    web_results = _ddgs_search(project_name, count=8)
     if not web_results:
-        web_results = searx_search(project_name, "general", count=8)
-    if not web_results:
-        web_results = _ddgs_search(project_name, count=8)
+        web_results = searx_search(f"{project_name} architecture", "general", count=8)
 
     # Step 2: Fetch content from top pages
     page_texts = []
@@ -283,18 +281,28 @@ def build_markdown(data: dict) -> str:
 
 
 def search_images(query: str, count: int = 8) -> list[dict]:
-    """Search images via SearXNG, fallback to Wikimedia Commons."""
+    """Search images via DuckDuckGo, fallback to Wikimedia Commons."""
     results = []
 
-    # Primary: SearXNG image search
+    # Primary: DuckDuckGo image search
+    try:
+        from ddgs import DDGS
+        for r in DDGS().images(f"{query} architecture", max_results=count):
+            img_url = r.get("image", "") or r.get("thumbnail", "")
+            if img_url and img_url.startswith("http"):
+                results.append({"url": img_url, "width": r.get("width", 1200), "title": r.get("title", "")})
+    except Exception as e:
+        print(f"[DDGS image error] {e}")
+
+    # If SearXNG is available, also try it
     try:
         img_results = searx_search(f"{query} architecture", "images", count=count)
         for r in img_results:
             img_url = r.get("img_src") or r.get("thumbnail_src") or r.get("url", "")
             if img_url and img_url.startswith("http"):
                 results.append({"url": img_url, "width": 1200, "title": r.get("title", "")})
-    except Exception as e:
-        print(f"[SearXNG image error] {e}")
+    except Exception:
+        pass
 
     # Fallback: Wikimedia Commons
     if len(results) < 3:
