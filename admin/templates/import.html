@@ -44,8 +44,9 @@
             <p style="font-size:0.78rem;color:var(--text3);margin-top:0.3rem;">📷 ${p.image_count} 张图片</p>
             <p style="font-size:0.8rem;color:var(--text2);margin-top:0.3rem;">${desc}</p>
           </div>
-          <div class="actions">
-            <button class="btn btn-accent btn-sm" onclick="showImportForm('${p.path.replace(/\\/g,'\\\\')}', ${i})">导入</button>
+          <div class="actions" style="flex-direction:column; gap:4px;">
+            <button class="btn btn-accent btn-sm" onclick="showImportForm('${p.path.replace(/\\/g,'\\\\')}', ${i})">📋 普通导入</button>
+            <button class="btn btn-outline btn-sm" onclick="enrichImport('${p.path.replace(/\\/g,'\\\\')}', ${i})">🤖 AI优化</button>
           </div>
         </div>
         <div id="form-${i}" style="display:none;"></div>`;
@@ -92,6 +93,40 @@
         const locationMatch = bodyText.match(/位于([^\s，。]+)/);
         if (locationMatch) document.getElementById(`imp-location-${idx}`).value = locationMatch[1];
       });
+  }
+
+  async function enrichImport(sourcePath, idx) {
+    const projCard = document.getElementById(`proj-${idx}`);
+    const fmText = projCard?.querySelector('.info p')?.textContent || '';
+    const archMatch = fmText.match(/建筑师:\s*(.+?)\s*·/);
+    const architect = archMatch ? archMatch[1] : '';
+    const title = projCard?.querySelector('.info h4')?.textContent || '';
+
+    if (!confirm(`将用 AI 搜索补充「${title}」的信息，统一为标准格式。\n图片保留原爬虫文件。\n确定继续？`)) return;
+
+    const statusEl = document.createElement('div');
+    statusEl.innerHTML = '<p><span class="status-dot running"></span> AI 正在搜索和整理，可能需要 30-60 秒...</p>';
+    document.getElementById(`form-${idx}`).style.display = 'block';
+    document.getElementById(`form-${idx}`).appendChild(statusEl);
+
+    try {
+      const result = await api('POST', '/api/import-enriched', {
+        source_folder: sourcePath,
+        architect: architect,
+        title: title,
+      });
+      if (result.ok) {
+        toast(`AI 优化完成！「${result.title}」已保存，${result.images_count} 张图片已处理`);
+        document.getElementById(`proj-${idx}`).style.opacity = '0.5';
+        document.getElementById(`form-${idx}`).style.display = 'none';
+      } else {
+        toast('优化失败: ' + (result.error || '未知'), 'error');
+      }
+    } catch(e) {
+      toast('请求失败: ' + e.message, 'error');
+    } finally {
+      statusEl.remove();
+    }
   }
 
   async function doImport(sourcePath, idx) {

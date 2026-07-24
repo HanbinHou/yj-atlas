@@ -58,9 +58,9 @@ images:
 location: 斯洛文尼亚
 materials:
 - 烧杉木
-- 浅刷木
 - 天然油
-tags: []
+tags:
+- 木结构
 title: OFIS arhitekti
 type: 社区文化中心
 year: 2025

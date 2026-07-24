@@ -391,6 +391,105 @@ def api_open_folder(subpath):
     return jsonify({"ok": True})
 
 
+@app.route("/api/import-enriched", methods=["POST"])
+def api_import_enriched():
+    """Import from crawler with AI enrichment to match research format."""
+    from researcher import get_api_key, _deepseek_chat, _ddgs_search, build_markdown, _slugify
+
+    payload = request.json
+    source_folder = Path(payload["source_folder"])
+    architect = payload.get("architect", source_folder.name)
+    title = payload.get("title", source_folder.name)
+
+    api_key = get_api_key()
+    if not api_key:
+        return jsonify({"error": "请先配置 DeepSeek API Key"}), 400
+
+    # Step 1: Read crawler content as context
+    md_file = source_folder / "content.md"
+    crawler_data = read_frontmatter(md_file) if md_file.exists() else {"body": ""}
+    crawler_body = crawler_data.get("body", "")
+
+    # Step 2: Web search for more info
+    search_query = f"{architect} {title} architecture"
+    web_results = _ddgs_search(search_query, count=5)
+    sources_text = "\n\n".join([
+        f"来源: {r.get('url','')}\n{r.get('body','')[:2000]}"
+        for r in web_results[:4]
+    ])
+
+    # Step 3: DeepSeek structured extraction
+    from researcher import RESEARCH_PROMPT
+    prompt = RESEARCH_PROMPT.format(project_name=f"{architect} - {title}")
+
+    system_prompt = "你是一位建筑学教授。基于提供的资料生成结构化建筑案例。回复使用简体中文。务必覆盖所有要求的字段。"
+
+    user_msg = f"""以下是爬虫抓取的原始内容和网络搜索结果，请整合生成标准的建筑案例分析：
+
+=== 爬虫原文 ===
+{crawler_body[:3000]}
+
+=== 网络搜索补充 ===
+{sources_text}
+
+{prompt}"""
+
+    text = _deepseek_chat(system_prompt, user_msg)
+
+    # Step 4: Parse and build MD
+    from researcher import parse_response
+    data = parse_response(text)
+    slug = _slugify(data.get("title") or title)
+    if not slug or slug == "untitled":
+        slug = _slugify(title)
+
+    md_text, fm = build_markdown(data)
+
+    # Step 5: Copy crawler images (keeping originals)
+    img_dest = PUBLIC_IMG / "cases" / slug
+    img_paths = []
+    if source_folder.exists():
+        img_dest.mkdir(parents=True, exist_ok=True)
+        for f in sorted(source_folder.glob("*.jpg")):
+            dest_file = img_dest / f.name
+            try:
+                from PIL import Image
+                size_mb = f.stat().st_size / (1024 * 1024)
+                if size_mb > 2:
+                    img = Image.open(f).convert("RGB")
+                    max_dim = 2000
+                    if max(img.size) > max_dim:
+                        ratio = max_dim / max(img.size)
+                        img = img.resize((int(img.size[0]*ratio), int(img.size[1]*ratio)), Image.LANCZOS)
+                    dest_file = img_dest / f"{f.stem}.webp"
+                    img.save(dest_file, "WEBP", quality=85)
+                else:
+                    shutil.copy2(f, dest_file)
+            except Exception:
+                shutil.copy2(f, dest_file)
+            img_paths.append(f"/images/cases/{slug}/{dest_file.name}")
+
+    fm["images"] = img_paths
+
+    # Save MD
+    import yaml
+    lines = ["---"]
+    lines.append(yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip())
+    lines.append("---")
+    lines.append("")
+    lines.append(md_text.split("---\n", 2)[-1] if "---\n" in md_text else md_text)
+    (CASES_DIR / f"{slug}.md").write_text("\n".join(lines), encoding="utf-8")
+
+    return jsonify({
+        "ok": True, "slug": slug,
+        "title": data.get("title", ""),
+        "architect": data.get("architect", ""),
+        "type": data.get("type", ""),
+        "location": data.get("location", ""),
+        "images_count": len(img_paths),
+        "raw": text,
+    })
+
 # ─── AI Research ──────────────────────────────────────
 
 @app.route("/api/settings", methods=["GET", "POST"])

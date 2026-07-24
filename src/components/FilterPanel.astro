@@ -120,7 +120,7 @@ const {
       if (filters.architect && data.architect !== filters.architect) visible = false;
       if (filters.type && data.type !== filters.type) visible = false;
       if (filters.material && !data.materials.includes(filters.material)) visible = false;
-      if (filters.location && data.location !== filters.location) visible = false;
+      if (filters.location && !data.location.includes(filters.location)) visible = false;
       if (filters.yearMin && data.year < parseInt(filters.yearMin)) visible = false;
       if (filters.yearMax && data.year > parseInt(filters.yearMax)) visible = false;
       if (activeTag && !data.tags.includes(activeTag)) visible = false;
