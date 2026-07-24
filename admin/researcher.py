@@ -199,7 +199,12 @@ def research_project(project_name: str) -> dict:
     )
 
     data = parse_response(text)
-    data["slug"] = _slugify(data.get("title", project_name))
+    slug = _slugify(data.get("title", project_name))
+    if not slug or slug in ("untitled", ""):
+        slug = _slugify(project_name)
+    if not slug:
+        return {"error": "无法生成有效的项目名称，请确认输入"}
+    data["slug"] = slug
     data["raw"] = text
     data["sources_count"] = len(page_texts)
     return data
