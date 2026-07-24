@@ -346,7 +346,7 @@ def api_research_project():
     if not project_name:
         return jsonify({"error": "请输入项目名称"}), 400
     if not get_api_key():
-        return jsonify({"error": "请先在设置页面配置 Anthropic API Key"}), 400
+        return jsonify({"error": "请先在设置页面配置 DeepSeek API Key"}), 400
 
     # Step 1: Research with Claude
     data = research_project(project_name)
