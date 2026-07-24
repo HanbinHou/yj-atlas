@@ -523,6 +523,24 @@ img {
   border-color: var(--color-accent);
 }
 
+.btn-search {
+  padding: 12px 28px;
+  background: var(--color-text);
+  color: var(--color-surface);
+  border: none;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  cursor: pointer;
+  letter-spacing: 0.04em;
+  border-radius: var(--radius);
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.btn-search:hover {
+  background: var(--color-accent-dark);
+}
+
 /* ===== Pagination ===== */
 .pagination {
   display: flex;

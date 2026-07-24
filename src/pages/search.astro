@@ -138,6 +138,13 @@ const items: SearchItem[] = [
     }
   }
 
+  // Read query param from URL (e.g., from homepage search)
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryParam = urlParams.get('q');
+  if (queryParam) {
+    input.value = queryParam;
+  }
+
   input.addEventListener('input', doSearch);
   doSearch();
 </script>

@@ -24,6 +24,19 @@ const books = (await getCollection('books')).slice(0, 4);
   </section>
 
   <div class="container">
+    <section class="home-section" style="max-width: 640px; margin: 0 auto var(--space-xl);">
+      <form action="/search/" method="GET" style="display: flex; gap: var(--space-sm);">
+        <input
+          type="text"
+          name="q"
+          class="search-input"
+          placeholder="搜索建筑师、材料、建筑类型、书名……"
+          style="margin-bottom: 0;"
+        />
+        <button type="submit" class="btn-search">搜索</button>
+      </form>
+    </section>
+
     <section class="home-section">
       <div class="home-section-header">
         <h2>近期案例</h2>
