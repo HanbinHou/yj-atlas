@@ -153,6 +153,11 @@
   </style>
 
   <script>
+  function imgSrc(src) {
+    if (!src) return '';
+    if (src.startsWith('http')) return src;
+    return '/site-images/' + src.replace('/images/', '');
+  }
   let reorderFile = '', reorderType = '';
 
   async function editImages(filename, type) {
@@ -165,7 +170,7 @@
       list.innerHTML = images.map((src, i) => `
         <li class="reorder-item" draggable="true" data-index="${i}">
           <span class="drag-handle">&#9776;</span>
-          <img src="/site-images/${src.replace('/images/', '')}" onerror="this.style.background='var(--border)'" />
+          <img src="${imgSrc(src)}" onerror="this.style.background='var(--border)'" />
           <span class="path">${src.split('/').pop()}</span>
         </li>
       `).join('');

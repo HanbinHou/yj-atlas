@@ -103,7 +103,7 @@
       // Preview images
       const preview = document.getElementById('images-preview');
       preview.innerHTML = (result.image_paths || []).map(p =>
-        `<img src="/site-images/${p.replace('/images/', '')}" style="width:120px;height:80px;object-fit:cover;border:1px solid var(--border);border-radius:var(--radius);" />`
+        `<img src="${imgSrc(p)}" style="width:120px;height:80px;object-fit:cover;border:1px solid var(--border);border-radius:var(--radius);" />`
       ).join('');
 
       document.getElementById('research-status').innerHTML =
