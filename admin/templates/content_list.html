@@ -26,6 +26,7 @@
       <td>{{ fm.get('type', '') or fm.get('category', '') }}</td>
       <td style="color:var(--text2);font-size:0.82rem;">{{ (fm.get('tags', [])[:3] | join(', ')) }}</td>
       <td>
+        <button class="btn btn-outline btn-sm" onclick="openEdit('{{ item.filename }}', '{{ type }}')" style="margin-right:4px;">编辑</button>
         <button class="btn btn-outline btn-sm" onclick="editImages('{{ item.filename }}', '{{ type }}')" style="margin-right:4px;">排序</button>
         <button class="btn btn-outline btn-sm" onclick="deleteItem('{{ item.filename }}')">删除</button>
       </td>
@@ -229,6 +230,116 @@
   function closeReorder(e) {
     if (e.target === e.currentTarget) closeReorderModal();
   }
+  <!-- Edit Modal -->
+  <div id="edit-modal" class="modal-overlay" style="display:none;" onclick="closeEditModal(event)">
+    <div class="modal-box" onclick="event.stopPropagation()" style="max-height:85vh;overflow-y:auto;">
+      <h3 style="font-weight:400; margin-bottom:1rem;" id="edit-modal-title">编辑</h3>
+      <div id="edit-form-fields"></div>
+      <button class="btn btn-accent" onclick="saveEdit()" style="margin-top:1rem;">保存修改</button>
+      <button class="btn btn-outline" onclick="closeEditModal()">取消</button>
+    </div>
+  </div>
+
+  <script>
+  let editFile = '', editType = '';
+
+  async function openEdit(filename, type) {
+    editFile = filename;
+    editType = type;
+    document.getElementById('edit-modal-title').textContent = '编辑: ' + filename.replace('.md','');
+    const data = await api('GET', `/api/content/${type}/${encodeURIComponent(filename)}`);
+    const fm = data.frontmatter || {};
+
+    let fields = '';
+    if (type === 'cases') {
+      fields = `
+        <div class="form-row"><div class="form-group"><label>标题</label><input id="ef-title" value="${esc(fm.title||'')}" /></div><div class="form-group"><label>建筑师</label><input id="ef-architect" value="${esc(fm.architect||'')}" /></div></div>
+        <div class="form-row"><div class="form-group"><label>类型</label><input id="ef-type" value="${esc(fm.type||'')}" /></div><div class="form-group"><label>年份</label><input id="ef-year" type="number" value="${fm.year||''}" /></div><div class="form-group"><label>地点</label><input id="ef-location" value="${esc(fm.location||'')}" /></div></div>
+        <div class="form-group"><label>材料 (逗号分隔)</label><input id="ef-materials" value="${esc((fm.materials||[]).join(', '))}" /></div>
+        <div class="form-group"><label>标签 (逗号分隔)</label><input id="ef-tags" value="${esc((fm.tags||[]).join(', '))}" /></div>
+        <div class="form-group"><label>一句话描述</label><input id="ef-description" value="${esc(fm.description||'')}" /></div>
+        <div class="form-group"><label>正文 (Markdown)</label><textarea id="ef-body" rows="10">${esc(data.body||'')}</textarea></div>
+      `;
+    } else if (type === 'materials') {
+      fields = `
+        <div class="form-row"><div class="form-group"><label>名称</label><input id="ef-title" value="${esc(fm.title||'')}" /></div><div class="form-group"><label>类别</label><input id="ef-category" value="${esc(fm.category||'')}" /></div></div>
+        <div class="form-group"><label>适用场景 (逗号分隔)</label><input id="ef-scenarios" value="${esc((fm.scenarios||[]).join(', '))}" /></div>
+        <div class="form-group"><label>标签 (逗号分隔)</label><input id="ef-tags" value="${esc((fm.tags||[]).join(', '))}" /></div>
+        <div class="form-group"><label>描述</label><input id="ef-description" value="${esc(fm.description||'')}" /></div>
+        <div class="form-group"><label>正文 (Markdown)</label><textarea id="ef-body" rows="10">${esc(data.body||'')}</textarea></div>
+      `;
+    } else {
+      fields = `
+        <div class="form-row"><div class="form-group"><label>书名</label><input id="ef-title" value="${esc(fm.title||'')}" /></div><div class="form-group"><label>作者</label><input id="ef-author" value="${esc(fm.author||'')}" /></div></div>
+        <div class="form-row"><div class="form-group"><label>分类</label><input id="ef-category" value="${esc(fm.category||'')}" /></div><div class="form-group"><label>阅读路径</label><select id="ef-readingPath"><option value="beginner" ${fm.readingPath==='beginner'?'selected':''}>入门</option><option value="intermediate" ${fm.readingPath==='intermediate'?'selected':''}>进阶</option><option value="advanced" ${fm.readingPath==='advanced'?'selected':''}>深度</option></select></div><div class="form-group"><label>年份</label><input id="ef-year" type="number" value="${fm.year||''}" /></div></div>
+        <div class="form-group"><label>标签 (逗号分隔)</label><input id="ef-tags" value="${esc((fm.tags||[]).join(', '))}" /></div>
+        <div class="form-group"><label>摘要</label><input id="ef-summary" value="${esc(fm.summary||'')}" /></div>
+        <div class="form-group"><label>价格 (¥)</label><input id="ef-price" type="number" value="${fm.price||''}" /></div>
+        <div class="form-group"><label>解锁码</label><input id="ef-unlockCode" value="${esc(fm.unlockCode||'')}" /></div>
+        <div class="form-group"><label>正文 (Markdown)</label><textarea id="ef-body" rows="10">${esc(data.body||'')}</textarea></div>
+      `;
+    }
+    document.getElementById('edit-form-fields').innerHTML = fields;
+    document.getElementById('edit-modal').style.display = 'flex';
+  }
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  async function saveEdit() {
+    let frontmatter = {};
+    const body = document.getElementById('ef-body')?.value || '';
+
+    if (editType === 'cases') {
+      frontmatter = {
+        title: document.getElementById('ef-title').value,
+        architect: document.getElementById('ef-architect').value,
+        year: parseInt(document.getElementById('ef-year').value) || 0,
+        type: document.getElementById('ef-type').value,
+        materials: document.getElementById('ef-materials').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        location: document.getElementById('ef-location').value,
+        tags: document.getElementById('ef-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        description: document.getElementById('ef-description').value,
+        images: [],
+      };
+    } else if (editType === 'materials') {
+      frontmatter = {
+        title: document.getElementById('ef-title').value,
+        category: document.getElementById('ef-category').value,
+        scenarios: document.getElementById('ef-scenarios').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        tags: document.getElementById('ef-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        description: document.getElementById('ef-description').value,
+        properties: [],
+      };
+    } else {
+      frontmatter = {
+        title: document.getElementById('ef-title').value,
+        author: document.getElementById('ef-author').value,
+        category: document.getElementById('ef-category').value,
+        readingPath: document.getElementById('ef-readingPath').value,
+        year: parseInt(document.getElementById('ef-year').value) || null,
+        tags: document.getElementById('ef-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        summary: document.getElementById('ef-summary').value,
+        price: parseFloat(document.getElementById('ef-price').value) || undefined,
+        unlockCode: document.getElementById('ef-unlockCode').value || undefined,
+      };
+    }
+
+    // Preserve existing images
+    try {
+      const current = await api('GET', `/api/content/${editType}/${encodeURIComponent(editFile)}`);
+      if (current.frontmatter?.images) frontmatter.images = current.frontmatter.images;
+    } catch(e) {}
+
+    const result = await api('POST', `/api/edit/${editType}/${encodeURIComponent(editFile)}`, { frontmatter, body });
+    if (result.ok) { toast('已保存！重新发布后生效'); closeEditModal(); }
+    else { toast('保存失败', 'error'); }
+  }
+
+  function closeEditModal(e) {
+    if (e && e.target && e.target !== e.currentTarget) return;
+    document.getElementById('edit-modal').style.display = 'none';
+  }
+
   function closeReorderModal() {
     document.getElementById('reorder-modal').style.display = 'none';
   }

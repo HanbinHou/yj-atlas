@@ -154,6 +154,30 @@ def api_content_item(content_type, filename):
     data["slug"] = path.stem
     return jsonify(data)
 
+@app.route("/api/edit/<content_type>/<filename>", methods=["POST"])
+def api_edit(content_type, filename):
+    """Update an existing content file in place."""
+    payload = request.json
+    frontmatter = payload.get("frontmatter", {})
+    body = payload.get("body", "")
+
+    dir_map = {"cases": CASES_DIR, "materials": MATERIALS_DIR, "books": BOOKS_DIR}
+    target = dir_map.get(content_type)
+    if not target:
+        return jsonify({"error": "invalid type"}), 400
+
+    md_file = target / filename
+    if not md_file.exists():
+        return jsonify({"error": "file not found"}), 404
+
+    lines = ["---"]
+    lines.append(yaml.dump(frontmatter, allow_unicode=True, default_flow_style=False).strip())
+    lines.append("---")
+    lines.append("")
+    lines.append(body)
+    md_file.write_text("\n".join(lines), encoding="utf-8")
+    return jsonify({"ok": True})
+
 @app.route("/api/save/<content_type>", methods=["POST"])
 def api_save(content_type):
     """Save content from the form editor."""
