@@ -14,7 +14,7 @@ CONTENT_DIR = BASE_DIR / "src" / "content"
 PUBLIC_IMG = BASE_DIR / "public" / "images"
 
 DEEPSEEK_BASE = "https://api.deepseek.com"
-DEEPSEEK_MODEL = "deepseek-chat"
+DEEPSEEK_MODEL = "deepseek-v4-pro"
 SEARXNG_URL = "http://localhost:8888"
 
 # ── config ────────────────────────────────────────────
