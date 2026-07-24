@@ -73,6 +73,10 @@ def index():
 def import_page():
     return render_template("import.html")
 
+@app.route("/research")
+def research_page():
+    return render_template("research.html")
+
 @app.route("/cases")
 @app.route("/materials")
 @app.route("/books")
@@ -319,6 +323,84 @@ def api_open_folder(subpath):
     if target.exists():
         subprocess.Popen(["explorer", str(target)], shell=True)
     return jsonify({"ok": True})
+
+
+# ─── AI Research ──────────────────────────────────────
+
+@app.route("/api/settings", methods=["GET", "POST"])
+def api_settings():
+    from researcher import get_api_key, set_api_key
+    if request.method == "POST":
+        key = request.json.get("api_key", "")
+        set_api_key(key)
+        return jsonify({"ok": True, "has_key": bool(key)})
+    return jsonify({"has_key": bool(get_api_key())})
+
+@app.route("/api/research-project", methods=["POST"])
+def api_research_project():
+    """AI research: search web for project info + images, generate MD."""
+    from researcher import get_api_key, research_project, build_markdown, search_images, download_images
+    import shutil
+
+    project_name = request.json.get("project_name", "").strip()
+    if not project_name:
+        return jsonify({"error": "请输入项目名称"}), 400
+    if not get_api_key():
+        return jsonify({"error": "请先在设置页面配置 Anthropic API Key"}), 400
+
+    # Step 1: Research with Claude
+    data = research_project(project_name)
+    if "error" in data:
+        return jsonify(data), 500
+
+    # Step 2: Build markdown
+    md_text, fm = build_markdown(data)
+
+    # Step 3: Search & download images
+    image_queries = data.get("image_queries", "")
+    queries = [q.strip() for q in image_queries.split("\n") if q.strip()]
+    if not queries:
+        queries = [f"{data.get('architect','')} {data.get('title','')} architecture"]
+
+    all_images = []
+    for q in queries[:3]:
+        imgs = search_images(q, count=3)
+        all_images.extend(imgs)
+        if len(all_images) >= 8:
+            break
+
+    slug = data.get("slug", "")
+    img_paths = download_images(all_images[:8], slug)
+
+    # Update frontmatter with image paths
+    fm["images"] = img_paths
+    import yaml
+    lines = ["---"]
+    lines.append(yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip())
+    lines.append("---")
+    lines.append("")
+    lines.append(md_text.split("---\n", 2)[-1] if "---\n" in md_text else md_text)
+
+    # Save MD file
+    md_file = Path(CASES_DIR) / f"{slug}.md"
+    md_file.write_text("\n".join(lines), encoding="utf-8")
+
+    return jsonify({
+        "ok": True,
+        "slug": slug,
+        "title": data.get("title", ""),
+        "architect": data.get("architect", ""),
+        "year": data.get("year", ""),
+        "type": data.get("type", ""),
+        "location": data.get("location", ""),
+        "description": data.get("description", ""),
+        "tags": data.get("tags", ""),
+        "materials": data.get("materials", ""),
+        "images_downloaded": len(img_paths),
+        "image_paths": img_paths,
+        "md_preview": md_text[:500],
+        "raw": data.get("raw", ""),
+    })
 
 
 if __name__ == "__main__":

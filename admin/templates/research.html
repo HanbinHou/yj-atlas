@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="page-title">🔬 AI 研究导入</h2>
+
+<div class="card">
+  <h3>研究建筑项目</h3>
+  <p style="color: var(--text2); margin-bottom: 1rem;">
+    输入项目名称，AI 自动搜索建筑信息（建筑师、年份、材料、历史等），
+    生成标准格式 Markdown，并下载高清图片。
+  </p>
+  <div class="form-row">
+    <div class="form-group" style="flex:1;">
+      <label>项目名称</label>
+      <input type="text" id="project-name" placeholder="例如：流水别墅 / Fallingwater / 龙美术馆西岸馆" />
+    </div>
+    <div class="form-group" style="align-self: flex-end;">
+      <button class="btn btn-accent" id="btn-research" onclick="doResearch()">开始研究</button>
+    </div>
+  </div>
+  <div id="research-status" style="margin-top: 1rem;"></div>
+</div>
+
+<div id="research-result" style="display:none;">
+  <div class="card" style="border-left: 3px solid var(--accent);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 id="result-title" style="margin:0;"></h3>
+      <button class="btn btn-accent" onclick="saveToSite()">✅ 导入到网站</button>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group"><label>标题</label><input id="edit-title" /></div>
+      <div class="form-group"><label>建筑师</label><input id="edit-architect" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>年份</label><input id="edit-year" /></div>
+      <div class="form-group"><label>类型</label><input id="edit-type" /></div>
+      <div class="form-group"><label>地点</label><input id="edit-location" /></div>
+    </div>
+    <div class="form-group"><label>材料（逗号分隔）</label><input id="edit-materials" /></div>
+    <div class="form-group"><label>标签（逗号分隔）</label><input id="edit-tags" /></div>
+    <div class="form-group"><label>描述</label><input id="edit-description" /></div>
+    <div class="form-group"><label>正文（Markdown，可编辑）</label><textarea id="edit-body" rows="12"></textarea></div>
+
+    <div id="images-status" style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text2);"></div>
+    <div id="images-preview" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;"></div>
+  </div>
+</div>
+
+<script>
+  let currentData = null;
+
+  // Check API key on load
+  fetch('/api/settings').then(r => r.json()).then(d => {
+    if (!d.has_key) {
+      document.getElementById('research-status').innerHTML = `
+        <div style="background:#fff3e0;padding:1rem;border-radius:var(--radius);">
+          ⚠️ 请先配置 Anthropic API Key<br>
+          <input type="password" id="api-key-input" placeholder="sk-ant-..." style="width:300px;margin:0.5rem 0;padding:0.4rem;" />
+          <button class="btn btn-primary btn-sm" onclick="saveApiKey()">保存</button>
+        </div>`;
+    }
+  });
+
+  async function saveApiKey() {
+    const key = document.getElementById('api-key-input').value.trim();
+    if (!key) return;
+    await api('POST', '/api/settings', { api_key: key });
+    document.getElementById('research-status').innerHTML = '<p style="color:var(--green);">API Key 已保存 ✅</p>';
+  }
+
+  async function doResearch() {
+    const name = document.getElementById('project-name').value.trim();
+    if (!name) { toast('请输入项目名称', 'error'); return; }
+
+    const btn = document.getElementById('btn-research');
+    btn.disabled = true;
+    btn.textContent = '研究中...';
+    document.getElementById('research-status').innerHTML =
+      '<p><span class="status-dot running"></span> AI 正在搜索和研究，可能需要 30-60 秒...</p>';
+
+    try {
+      const result = await api('POST', '/api/research-project', { project_name: name });
+      if (result.error) {
+        document.getElementById('research-status').innerHTML = `<p style="color:var(--red);">${result.error}</p>`;
+        return;
+      }
+
+      currentData = result;
+      document.getElementById('research-result').style.display = 'block';
+      document.getElementById('result-title').textContent = result.title;
+      document.getElementById('edit-title').value = result.title || '';
+      document.getElementById('edit-architect').value = result.architect || '';
+      document.getElementById('edit-year').value = result.year || '';
+      document.getElementById('edit-type').value = result.type || '';
+      document.getElementById('edit-location').value = result.location || '';
+      document.getElementById('edit-materials').value = result.materials || '';
+      document.getElementById('edit-tags').value = result.tags || '';
+      document.getElementById('edit-description').value = result.description || '';
+      document.getElementById('edit-body').value = result.raw || '';
+      document.getElementById('images-status').textContent =
+        `已下载 ${result.images_downloaded} 张图片`;
+
+      // Preview images
+      const preview = document.getElementById('images-preview');
+      preview.innerHTML = (result.image_paths || []).map(p =>
+        `<img src="${p}" style="width:120px;height:80px;object-fit:cover;border:1px solid var(--border);border-radius:var(--radius);" />`
+      ).join('');
+
+      document.getElementById('research-status').innerHTML =
+        '<p style="color:var(--green);">✅ 研究完成！请检查并编辑，确认后点击「导入到网站」</p>';
+    } catch (e) {
+      document.getElementById('research-status').innerHTML = `<p style="color:var(--red);">研究失败: ${e.message}</p>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '开始研究';
+    }
+  }
+
+  async function saveToSite() {
+    if (!currentData) return;
+    const result = await api('POST', `/api/save/cases`, {
+      frontmatter: {
+        title: document.getElementById('edit-title').value,
+        architect: document.getElementById('edit-architect').value,
+        year: parseInt(document.getElementById('edit-year').value) || 0,
+        type: document.getElementById('edit-type').value,
+        materials: document.getElementById('edit-materials').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        location: document.getElementById('edit-location').value,
+        tags: document.getElementById('edit-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        description: document.getElementById('edit-description').value,
+        images: currentData.image_paths || [],
+      },
+      body: document.getElementById('edit-body').value,
+    });
+    if (result.ok) {
+      toast('已保存！可到面板页点击「发布」上线');
+    } else {
+      toast('保存失败', 'error');
+    }
+  }
+</script>
+{% endblock %}
