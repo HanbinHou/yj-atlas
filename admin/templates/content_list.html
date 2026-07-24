@@ -151,20 +151,24 @@
   let reorderFile = '', reorderType = '';
 
   async function editImages(filename, type) {
-    reorderFile = filename;
-    reorderType = type;
-    const data = await api('GET', `/api/content/${type}/${filename}`);
-    const images = (data.frontmatter && data.frontmatter.images) || [];
-    const list = document.getElementById('reorder-list');
-    list.innerHTML = images.map((src, i) => `
-      <li class="reorder-item" data-index="${i}">
-        <img src="${src}" onerror="this.style.background='var(--border)'" />
-        <span class="path">${src.split('/').pop()}</span>
-        <button class="reorder-btn" onclick="moveItem(${i}, -1)" ${i === 0 ? 'disabled' : ''}>&#9650;</button>
-        <button class="reorder-btn" onclick="moveItem(${i}, 1)" ${i === images.length - 1 ? 'disabled' : ''}>&#9660;</button>
-      </li>
-    `).join('');
-    document.getElementById('reorder-modal').style.display = 'flex';
+    try {
+      reorderFile = filename;
+      reorderType = type;
+      const data = await api('GET', `/api/content/${type}/${encodeURIComponent(filename)}`);
+      const images = (data.frontmatter && data.frontmatter.images) || [];
+      const list = document.getElementById('reorder-list');
+      list.innerHTML = images.map((src, i) => `
+        <li class="reorder-item" data-index="${i}">
+          <img src="${src}" onerror="this.style.background='var(--border)'" />
+          <span class="path">${src.split('/').pop()}</span>
+          <button class="reorder-btn" onclick="moveItem(${i}, -1)" ${i === 0 ? 'disabled' : ''}>&#9650;</button>
+          <button class="reorder-btn" onclick="moveItem(${i}, 1)" ${i === images.length - 1 ? 'disabled' : ''}>&#9660;</button>
+        </li>
+      `).join('');
+      document.getElementById('reorder-modal').style.display = 'flex';
+    } catch(e) {
+      toast('加载失败: ' + e.message, 'error');
+    }
   }
 
   function moveItem(idx, dir) {
