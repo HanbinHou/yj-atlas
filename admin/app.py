@@ -2,6 +2,7 @@
 YJ Atlas 管理后台 — 爬虫内容导入 / 手动录入 / 图片处理 / 一键发布
 """
 import shutil
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -283,18 +284,21 @@ def api_publish():
         # 1. Build
         steps.append({"step": "build", "status": "running"})
         result = subprocess.run(
-            ["npm", "run", "build"],
-            cwd=BASE_DIR, capture_output=True, text=True, timeout=120,
+            "npm run build",
+            cwd=str(BASE_DIR), capture_output=True, text=True, timeout=120,
             shell=True,
         )
         steps[-1]["status"] = "ok" if result.returncode == 0 else "error"
         steps[-1]["output"] = result.stdout[-500:] + result.stderr[-500:]
 
+        if result.returncode != 0:
+            return jsonify({"steps": steps, "error": "build failed"})
+
         # 2. Deploy
         steps.append({"step": "deploy", "status": "running"})
         result = subprocess.run(
-            ["npx", "netlify", "deploy", "--prod", "--dir=dist"],
-            cwd=BASE_DIR, capture_output=True, text=True, timeout=180,
+            "npx netlify deploy --prod --dir=dist",
+            cwd=str(BASE_DIR), capture_output=True, text=True, timeout=180,
             shell=True,
         )
         steps[-1]["status"] = "ok" if result.returncode == 0 else "error"
@@ -408,6 +412,8 @@ def api_research_project():
             break
 
     slug = data.get("slug", "")
+    if not slug or slug == "untitled":
+        slug = re.sub(r'[^\w一-鿿-]', '', project_name)[:60] or "unnamed"
     img_paths = download_images(all_images[:8], slug)
 
     # Update frontmatter with image paths

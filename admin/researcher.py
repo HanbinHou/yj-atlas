@@ -199,11 +199,12 @@ def research_project(project_name: str) -> dict:
     )
 
     data = parse_response(text)
-    slug = _slugify(data.get("title", project_name))
-    if not slug or slug in ("untitled", ""):
+    # Robust slug: title > project_name > timestamp
+    slug = _slugify(data.get("title") or "")
+    if not slug or "untitled" in slug or slug == "untitled":
         slug = _slugify(project_name)
-    if not slug:
-        return {"error": "无法生成有效的项目名称，请确认输入"}
+    if not slug or "untitled" in slug or slug == "untitled":
+        slug = f"project-{int(time.time())}"
     data["slug"] = slug
     data["raw"] = text
     data["sources_count"] = len(page_texts)
