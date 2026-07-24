@@ -119,6 +119,11 @@ def api_reorder_images():
     md_file.write_text("\n".join(lines), encoding="utf-8")
     return jsonify({"ok": True})
 
+@app.route("/site-images/<path:subpath>")
+def serve_site_images(subpath):
+    """Proxy images from the Astro public/images/ directory."""
+    return send_from_directory(BASE_DIR / "public" / "images", subpath)
+
 @app.route("/api/thumbnail")
 def api_thumbnail():
     """Serve a thumbnail from a file path (query param)."""
