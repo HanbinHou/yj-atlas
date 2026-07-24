@@ -26,6 +26,7 @@
       <td>{{ fm.get('type', '') or fm.get('category', '') }}</td>
       <td style="color:var(--text2);font-size:0.82rem;">{{ (fm.get('tags', [])[:3] | join(', ')) }}</td>
       <td>
+        <button class="btn btn-outline btn-sm" onclick="editImages('{{ item.filename }}', '{{ type }}')" style="margin-right:4px;">排序</button>
         <button class="btn btn-outline btn-sm" onclick="deleteItem('{{ item.filename }}')">删除</button>
       </td>
     </tr>
@@ -121,6 +122,85 @@
     await api('DELETE', `/api/content/${TYPE}/${filename}`);
     toast('已删除');
     reloadPage();
+  }
+
+  <!-- Image Reorder Modal -->
+  <div id="reorder-modal" class="modal-overlay" style="display:none;" onclick="closeReorder(event)">
+    <div class="modal-box" onclick="event.stopPropagation()">
+      <h3 style="font-weight:400; margin-bottom:1rem;">🖼️ 图片排序</h3>
+      <p style="font-size:0.82rem; color:var(--text2); margin-bottom:0.8rem;">拖放或点击上下箭头调整顺序，然后保存</p>
+      <ul id="reorder-list" style="list-style:none; max-height:50vh; overflow-y:auto;"></ul>
+      <div style="margin-top:1rem; display:flex; gap:0.5rem;">
+        <button class="btn btn-accent" onclick="saveReorder()">保存顺序</button>
+        <button class="btn btn-outline" onclick="closeReorderModal()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; display:flex; align-items:center; justify-content:center; }
+    .modal-box { background:var(--surface); padding:1.5rem; border-radius:var(--radius); min-width:480px; max-width:640px; box-shadow:0 4px 24px rgba(0,0,0,0.15); }
+    .reorder-item { display:flex; align-items:center; gap:0.8rem; padding:0.5rem 0; border-bottom:1px solid var(--border); }
+    .reorder-item img { width:80px; height:53px; object-fit:cover; border-radius:var(--radius); border:1px solid var(--border); }
+    .reorder-item .path { flex:1; font-size:0.82rem; color:var(--text2); word-break:break-all; }
+    .reorder-btn { background:none; border:1px solid var(--border); border-radius:var(--radius); cursor:pointer; padding:2px 10px; font-size:1rem; color:var(--text2); line-height:1; transition:all .15s; }
+    .reorder-btn:hover { border-color:var(--accent); color:var(--accent); }
+  </style>
+
+  <script>
+  let reorderFile = '', reorderType = '';
+
+  async function editImages(filename, type) {
+    reorderFile = filename;
+    reorderType = type;
+    const data = await api('GET', `/api/content/${type}/${filename}`);
+    const images = (data.frontmatter && data.frontmatter.images) || [];
+    const list = document.getElementById('reorder-list');
+    list.innerHTML = images.map((src, i) => `
+      <li class="reorder-item" data-index="${i}">
+        <img src="${src}" onerror="this.style.background='var(--border)'" />
+        <span class="path">${src.split('/').pop()}</span>
+        <button class="reorder-btn" onclick="moveItem(${i}, -1)" ${i === 0 ? 'disabled' : ''}>&#9650;</button>
+        <button class="reorder-btn" onclick="moveItem(${i}, 1)" ${i === images.length - 1 ? 'disabled' : ''}>&#9660;</button>
+      </li>
+    `).join('');
+    document.getElementById('reorder-modal').style.display = 'flex';
+  }
+
+  function moveItem(idx, dir) {
+    const list = document.getElementById('reorder-list');
+    const items = [...list.querySelectorAll('.reorder-item')];
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= items.length) return;
+    if (dir > 0) {
+      list.insertBefore(items[newIdx], items[idx]);
+    } else {
+      list.insertBefore(items[idx], items[newIdx]);
+    }
+    // Update data-index
+    list.querySelectorAll('.reorder-item').forEach((el, i) => el.dataset.index = i);
+  }
+
+  async function saveReorder() {
+    const list = document.getElementById('reorder-list');
+    const items = [...list.querySelectorAll('.reorder-item')];
+    const images = items.map(el => el.querySelector('img').src);
+    const result = await api('POST', '/api/reorder-images', {
+      filename: reorderFile,
+      type: reorderType,
+      images,
+    });
+    if (result.ok) {
+      toast('排序已保存！重新发布后生效');
+      document.getElementById('reorder-modal').style.display = 'none';
+    }
+  }
+
+  function closeReorder(e) {
+    if (e.target === e.currentTarget) closeReorderModal();
+  }
+  function closeReorderModal() {
+    document.getElementById('reorder-modal').style.display = 'none';
   }
 
   async function reloadPage() { location.reload(); }

@@ -87,6 +87,38 @@ def content_pages():
     items = list_content(path)
     return render_template("content_list.html", title=title, label=label, type=path, items=items)
 
+@app.route("/api/reorder-images", methods=["POST"])
+def api_reorder_images():
+    """Reorder images in a case's frontmatter."""
+    data = request.json
+    filename = data.get("filename")
+    content_type = data.get("type", "cases")
+    new_order = data.get("images", [])
+
+    dir_map = {"cases": CASES_DIR, "materials": MATERIALS_DIR}
+    target = dir_map.get(content_type)
+    if not target:
+        return jsonify({"error": "invalid type"}), 400
+
+    md_file = target / filename
+    if not md_file.exists():
+        return jsonify({"error": "file not found"}), 404
+
+    text = md_file.read_text(encoding="utf-8")
+    parts = text.split("---", 2)
+    if len(parts) < 3:
+        return jsonify({"error": "invalid format"}), 400
+
+    fm = yaml.safe_load(parts[1]) or {}
+    fm["images"] = new_order
+
+    lines = ["---"]
+    lines.append(yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip())
+    lines.append("---")
+    lines.append(parts[2].strip() if len(parts) > 2 else "")
+    md_file.write_text("\n".join(lines), encoding="utf-8")
+    return jsonify({"ok": True})
+
 @app.route("/api/thumbnail")
 def api_thumbnail():
     """Serve a thumbnail from a file path (query param)."""
