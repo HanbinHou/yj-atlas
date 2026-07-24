@@ -232,55 +232,68 @@ def api_scan_crawler():
 
 @app.route("/api/import-case", methods=["POST"])
 def api_import_case():
-    """Import one project from crawler → generate case .md + copy images."""
+    """Import one project from crawler → format via DeepSeek → copy images."""
+    from researcher import get_api_key, _deepseek_chat, parse_response, build_markdown, _slugify, RESEARCH_PROMPT
+
     payload = request.json
     source_folder = Path(payload["source_folder"])
     title = payload.get("title", source_folder.name)
     architect = payload.get("architect", "")
-    case_type = payload.get("type", "")
-    materials = payload.get("materials", [])
-    location = payload.get("location", "")
-    year = payload.get("year", 2025)
-    tags = payload.get("tags", [])
-    description = payload.get("description", "")
-    body = payload.get("body", "")
     include_images = payload.get("include_images", True)
+    crawler_body = payload.get("body", "")
 
-    slug = slugify(title)
+    # Use DeepSeek to reformat crawler content into standard template
+    api_key = get_api_key()
+    if api_key and crawler_body:
+        try:
+            prompt = RESEARCH_PROMPT.format(project_name=f"{architect} - {title}")
+            text = _deepseek_chat(
+                system_prompt="你是一位建筑学教授。将以下建筑项目资料整理成标准格式。使用简体中文。",
+                user_message=f"以下是爬虫抓取的建筑项目原始资料，请整理成标准格式：\n\n{crawler_body[:4000]}\n\n{prompt}",
+            )
+            data = parse_response(text)
+            slug = _slugify(data.get("title") or title)
+            if not slug or slug == "untitled":
+                slug = _slugify(title)
+            md_body, fm = build_markdown(data)
+            body_final = md_body.split("---\n", 2)[-1] if "---\n" in md_body else md_body
+        except Exception:
+            slug = slugify(title)
+            fm = {
+                "title": title, "architect": architect, "year": payload.get("year", 2025),
+                "type": payload.get("type", ""), "materials": payload.get("materials", []),
+                "location": payload.get("location", ""), "tags": payload.get("tags", []),
+                "description": payload.get("description", ""), "images": [],
+            }
+            body_final = crawler_body
+    else:
+        slug = slugify(title)
+        fm = {
+            "title": title, "architect": architect, "year": payload.get("year", 2025),
+            "type": payload.get("type", ""), "materials": payload.get("materials", []),
+            "location": payload.get("location", ""), "tags": payload.get("tags", []),
+            "description": payload.get("description", ""), "images": [],
+        }
+        body_final = crawler_body
+
     dest_md = CASES_DIR / f"{slug}.md"
-
-    # Build frontmatter
-    fm = {
-        "title": title,
-        "architect": architect,
-        "year": year,
-        "type": case_type,
-        "materials": materials,
-        "location": location,
-        "tags": tags,
-        "description": description,
-        "images": [],
-    }
 
     # Copy images
     img_dest = PUBLIC_IMG / "cases" / slug
+    img_paths = []
     if include_images and source_folder.exists():
         img_dest.mkdir(parents=True, exist_ok=True)
-        img_paths = []
         for f in sorted(source_folder.glob("*.jpg")):
             dest_file = img_dest / f.name
-            # Resize if > 2MB
             try:
                 from PIL import Image
                 size_mb = f.stat().st_size / (1024 * 1024)
                 if size_mb > 2:
-                    img = Image.open(f)
-                    img = img.convert("RGB")
+                    img = Image.open(f).convert("RGB")
                     max_dim = 2000
                     if max(img.size) > max_dim:
                         ratio = max_dim / max(img.size)
-                        new_size = (int(img.size[0] * ratio), int(img.size[1] * ratio))
-                        img = img.resize(new_size, Image.LANCZOS)
+                        img = img.resize((int(img.size[0]*ratio), int(img.size[1]*ratio)), Image.LANCZOS)
                     dest_file = img_dest / f"{f.stem}.webp"
                     img.save(dest_file, "WEBP", quality=85)
                 else:
@@ -288,17 +301,17 @@ def api_import_case():
             except Exception:
                 shutil.copy2(f, dest_file)
             img_paths.append(f"/images/cases/{slug}/{dest_file.name}")
-        fm["images"] = img_paths
+    fm["images"] = img_paths
 
     # Write markdown
     lines = ["---"]
     lines.append(yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip())
     lines.append("---")
     lines.append("")
-    lines.append(body)
+    lines.append(body_final)
     dest_md.write_text("\n".join(lines), encoding="utf-8")
 
-    return jsonify({"ok": True, "slug": slug, "images_copied": len(fm["images"])})
+    return jsonify({"ok": True, "slug": slug, "images_copied": len(img_paths)})
 
 @app.route("/api/publish", methods=["POST"])
 def api_publish():
