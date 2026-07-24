@@ -84,7 +84,8 @@ def content_pages():
     path = request.path.strip("/")
     labels = {"cases": ("🏛️ 案例管理", "案例"), "materials": ("🧱 材料管理", "材料"), "books": ("📚 书目管理", "书目")}
     title, label = labels.get(path, ("管理", ""))
-    return render_template("content_list.html", title=title, label=label, type=path)
+    items = list_content(path)
+    return render_template("content_list.html", title=title, label=label, type=path, items=items)
 
 @app.route("/api/thumbnail")
 def api_thumbnail():

@@ -120,6 +120,21 @@
     .project-card .info p { font-size: 0.82rem; color: var(--text2); }
     .project-card .actions { display: flex; gap: 0.5rem; align-items: center; }
   </style>
+  <script>
+    function toast(msg, type='success') {
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = msg;
+      document.getElementById('toast-area').appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+    async function api(method, url, body) {
+      const opts = { method, headers: {'Content-Type': 'application/json'} };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(url, opts);
+      return res.json();
+    }
+  </script>
 </head>
 <body>
 <div class="app">
@@ -137,20 +152,5 @@
   </div>
 </div>
 <div id="toast-area"></div>
-<script>
-  function toast(msg, type='success') {
-    const el = document.createElement('div');
-    el.className = `toast ${type}`;
-    el.textContent = msg;
-    document.getElementById('toast-area').appendChild(el);
-    setTimeout(() => el.remove(), 3000);
-  }
-  async function api(method, url, body) {
-    const opts = { method, headers: {'Content-Type': 'application/json'} };
-    if (body) opts.body = JSON.stringify(body);
-    const res = await fetch(url, opts);
-    return res.json();
-  }
-</script>
 </body>
 </html>

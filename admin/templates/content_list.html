@@ -18,7 +18,22 @@
   <thead>
     <tr><th>标题</th><th>分类/类型</th><th>标签</th><th>操作</th></tr>
   </thead>
-  <tbody></tbody>
+  <tbody>
+    {% for item in items %}
+    {% set fm = item.frontmatter or {} %}
+    <tr>
+      <td><strong>{{ fm.get('title', item.slug) }}</strong></td>
+      <td>{{ fm.get('type', '') or fm.get('category', '') }}</td>
+      <td style="color:var(--text2);font-size:0.82rem;">{{ (fm.get('tags', [])[:3] | join(', ')) }}</td>
+      <td>
+        <button class="btn btn-outline btn-sm" onclick="deleteItem('{{ item.filename }}')">删除</button>
+      </td>
+    </tr>
+    {% endfor %}
+    {% if not items %}
+    <tr><td colspan="4" style="color:var(--text3);text-align:center;">暂无内容</td></tr>
+    {% endif %}
+  </tbody>
 </table>
 
 <script>
@@ -97,7 +112,7 @@
 
     const body = document.getElementById('f-body').value;
     const result = await api('POST', `/api/save/${TYPE}`, { frontmatter, body });
-    if (result.ok) { toast('保存成功'); document.getElementById('add-form').style.display = 'none'; loadList(); }
+    if (result.ok) { toast('保存成功'); document.getElementById('add-form').style.display = 'none'; reloadPage(); }
     else { toast('保存失败', 'error'); }
   }
 
@@ -105,28 +120,9 @@
     if (!confirm('确认删除？')) return;
     await api('DELETE', `/api/content/${TYPE}/${filename}`);
     toast('已删除');
-    loadList();
+    reloadPage();
   }
 
-  async function loadList() {
-    const items = await api('GET', `/api/content/${TYPE}`);
-    const tbody = document.querySelector('#content-table tbody');
-    tbody.innerHTML = items.map(item => {
-      const fm = item.frontmatter || {};
-      const typeStr = TYPE === 'cases' ? (fm.type || '') : TYPE === 'materials' ? (fm.category || '') : (fm.category || '') + ' · ' + (fm.readingPath || '');
-      const tags = (fm.tags || []).slice(0, 3).join(', ');
-      return `<tr>
-        <td><strong>${fm.title || item.slug}</strong></td>
-        <td>${typeStr}</td>
-        <td style="color:var(--text2);font-size:0.82rem;">${tags}</td>
-        <td>
-          <button class="btn btn-outline btn-sm" onclick="deleteItem('${item.filename}')">删除</button>
-        </td>
-      </tr>`;
-    }).join('');
-    if (!items.length) tbody.innerHTML = '<tr><td colspan="4" style="color:var(--text3);text-align:center;">暂无内容</td></tr>';
-  }
-
-  loadList();
+  async function reloadPage() { location.reload(); }
 </script>
 {% endblock %}
