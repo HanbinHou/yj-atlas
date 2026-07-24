@@ -3,3 +3,5 @@ dist/
 .astro/
 .DS_Store
 public/images/
+admin/api_key.txt
+admin/__pycache__/
