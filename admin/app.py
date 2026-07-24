@@ -310,7 +310,7 @@ def api_publish():
         result = subprocess.run(
             "npm run build",
             cwd=str(BASE_DIR), capture_output=True, text=True, timeout=120,
-            shell=True,
+            shell=True, encoding="utf-8", errors="replace",
         )
         steps[-1]["status"] = "ok" if result.returncode == 0 else "error"
         steps[-1]["output"] = result.stdout[-500:] + result.stderr[-500:]
@@ -323,7 +323,7 @@ def api_publish():
         result = subprocess.run(
             "npx netlify deploy --prod --dir=dist",
             cwd=str(BASE_DIR), capture_output=True, text=True, timeout=180,
-            shell=True,
+            shell=True, encoding="utf-8", errors="replace",
         )
         steps[-1]["status"] = "ok" if result.returncode == 0 else "error"
         steps[-1]["output"] = result.stdout[-500:] + result.stderr[-500:]
@@ -339,13 +339,13 @@ def api_publish():
 
         # 3. Git backup
         steps.append({"step": "git", "status": "running"})
-        subprocess.run(["git", "add", "-A"], cwd=BASE_DIR, capture_output=True, shell=True)
+        subprocess.run("git add -A", cwd=str(BASE_DIR), capture_output=True, shell=True)
         result = subprocess.run(
-            ["git", "commit", "-m", f"Publish: {datetime.now().strftime('%Y-%m-%d %H:%M')}"],
-            cwd=BASE_DIR, capture_output=True, text=True, timeout=30,
-            shell=True,
+            f'git commit -m "Publish: {datetime.now().strftime("%Y-%m-%d %H:%M")}"',
+            cwd=str(BASE_DIR), capture_output=True, text=True, timeout=30,
+            shell=True, encoding="utf-8", errors="replace",
         )
-        subprocess.run(["git", "push"], cwd=BASE_DIR, capture_output=True, timeout=60, shell=True)
+        subprocess.run("git push", cwd=str(BASE_DIR), capture_output=True, timeout=60, shell=True)
         steps[-1]["status"] = "ok"
         steps[-1]["output"] = result.stdout[:300]
 

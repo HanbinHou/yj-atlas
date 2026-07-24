@@ -55,7 +55,7 @@ images:
 - http://localhost:5000/site-images/cases/ofis-arhitekti/51.jpg
 - http://localhost:5000/site-images/cases/ofis-arhitekti/52.jpg
 - http://localhost:5000/site-images/cases/ofis-arhitekti/53.jpg
-location: 斯洛文尼亚的
+location: 斯洛文尼亚
 materials:
 - 烧杉木
 - 浅刷木
@@ -65,6 +65,7 @@ title: OFIS arhitekti
 type: 社区文化中心
 year: 2025
 ---
+
 - 建筑师/事务所：OFIS arhitekti，斯洛文尼亚知名事务所
 - 建筑类型：社区文化中心
 - 特殊材料：烧杉木，浅刷木，天然油
