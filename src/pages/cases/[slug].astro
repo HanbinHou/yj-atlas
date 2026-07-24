@@ -56,7 +56,7 @@ const relatedMaterials = materials.filter(m =>
     </header>
 
     {case_.data.images.length > 0 && (
-      <img class="detail-image lightbox-trigger" src={case_.data.images[0]} alt={case_.data.title} data-full={case_.data.images[0]} />
+      <img class="detail-image lightbox-trigger" src={case_.data.images[0]} alt={case_.data.title} data-index="0" />
     )}
 
     <div class="detail-content" set:html={case_.rendered?.html || case_.body || ''} />
@@ -65,8 +65,8 @@ const relatedMaterials = materials.filter(m =>
       <section style="margin-top: var(--space-xl);">
         <h3 style="margin-bottom: var(--space-md);">更多图片</h3>
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: var(--space-md);">
-          {case_.data.images.slice(1).map(img => (
-            <img src={img} alt={case_.data.title} class="lightbox-trigger" data-full={img} style="border: 1px solid var(--color-border); cursor: pointer;" loading="lazy" />
+          {case_.data.images.slice(1).map((img, i) => (
+            <img src={img} alt={case_.data.title} class="lightbox-trigger" data-index={i + 1} style="border: 1px solid var(--color-border); cursor: pointer;" loading="lazy" />
           ))}
         </div>
       </section>
@@ -83,68 +83,97 @@ const relatedMaterials = materials.filter(m =>
       </section>
     )}
 
-    <!-- Lightbox overlay -->
-    <div id="lightbox" class="lightbox-overlay" onclick="closeLightbox()">
-      <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox-overlay" data-images={JSON.stringify(case_.data.images)}>
+      <span class="lightbox-close">&times;</span>
+      <span class="lightbox-arrow lightbox-prev">&lsaquo;</span>
+      <span class="lightbox-arrow lightbox-next">&rsaquo;</span>
       <img id="lightbox-img" class="lightbox-img" src="" alt="" />
     </div>
   </article>
 </BaseLayout>
 
 <script>
+  const allImages = JSON.parse(document.getElementById('lightbox').dataset.images);
+  let currentIdx = 0;
   const triggers = document.querySelectorAll('.lightbox-trigger');
   const overlay = document.getElementById('lightbox');
   const lightboxImg = document.getElementById('lightbox-img');
+  const prevBtn = document.querySelector('.lightbox-prev');
+  const nextBtn = document.querySelector('.lightbox-next');
 
-  triggers.forEach(img => {
-    img.style.cursor = 'pointer';
-    img.addEventListener('click', (e) => {
-      e.preventDefault();
-      const fullSrc = img.getAttribute('data-full') || img.getAttribute('src');
-      lightboxImg.src = fullSrc;
-      overlay.classList.add('active');
-      document.body.style.overflow = 'hidden';
-    });
-  });
+  function showImage(idx) {
+    currentIdx = idx;
+    lightboxImg.src = allImages[idx];
+    prevBtn.style.visibility = idx > 0 ? 'visible' : 'hidden';
+    nextBtn.style.visibility = idx < allImages.length - 1 ? 'visible' : 'hidden';
+  }
+
+  function openLightbox(idx) {
+    showImage(idx);
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
 
   function closeLightbox() {
     overlay.classList.remove('active');
     document.body.style.overflow = '';
-    lightboxImg.src = '';
   }
+
+  triggers.forEach(img => {
+    img.style.cursor = 'pointer';
+    img.addEventListener('click', () => {
+      openLightbox(parseInt(img.dataset.index) || 0);
+    });
+  });
+
+  prevBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (currentIdx > 0) showImage(currentIdx - 1);
+  });
+  nextBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (currentIdx < allImages.length - 1) showImage(currentIdx + 1);
+  });
+  overlay.querySelector('.lightbox-close').addEventListener('click', closeLightbox);
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) closeLightbox();
+  });
 
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowLeft' && overlay.classList.contains('active') && currentIdx > 0) showImage(currentIdx - 1);
+    if (e.key === 'ArrowRight' && overlay.classList.contains('active') && currentIdx < allImages.length - 1) showImage(currentIdx + 1);
   });
 </script>
 
 <style>
   .lightbox-overlay {
-    display: none;
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.92);
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.93); z-index: 9999;
+    align-items: center; justify-content: center;
   }
   .lightbox-overlay.active { display: flex; }
   .lightbox-img {
-    max-width: 95vw;
-    max-height: 95vh;
-    object-fit: contain;
-    cursor: default;
+    max-width: 92vw; max-height: 92vh;
+    object-fit: contain; cursor: default;
+    user-select: none; -webkit-user-select: none;
   }
   .lightbox-close {
-    position: absolute;
-    top: 1rem; right: 1.5rem;
-    color: #fff;
-    font-size: 2rem;
-    cursor: pointer;
-    z-index: 10000;
-    line-height: 1;
-    opacity: 0.7;
-    transition: opacity 0.2s;
+    position: absolute; top: 1.2rem; right: 1.6rem;
+    color: #fff; font-size: 2rem; cursor: pointer;
+    z-index: 10000; line-height: 1; opacity: 0.5;
+    transition: opacity 0.2s; font-weight: 200;
   }
-  .lightbox-close:hover { opacity: 1; }
+  .lightbox-close:hover { opacity: 0.9; }
+  .lightbox-arrow {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    color: #fff; font-size: 3rem; font-weight: 200;
+    cursor: pointer; z-index: 10000; opacity: 0.4;
+    transition: opacity 0.2s; line-height: 1;
+    padding: 1rem; user-select: none;
+  }
+  .lightbox-arrow:hover { opacity: 0.85; }
+  .lightbox-prev { left: 0.5rem; }
+  .lightbox-next { right: 0.5rem; }
 </style>
