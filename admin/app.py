@@ -62,6 +62,9 @@ def list_content(content_type: str) -> list[dict]:
         data["filename"] = md_file.name
         data["slug"] = md_file.stem
         items.append(data)
+    # Sort cases by order desc, then mtime desc
+    if content_type == "cases":
+        items.sort(key=lambda x: (x.get("frontmatter", {}).get("order", 0), x.get("slug", "")), reverse=True)
     return items
 
 # ─── routes ────────────────────────────────────────────

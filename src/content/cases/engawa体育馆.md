@@ -2,21 +2,21 @@
 architect: FAKT Office
 description: 以日本“缘侧”为概念，用连续木檐廊将体育馆化作开放的社区看台与漫步长廊。
 images:
-- /images/cases/engawa体育馆/1.jpg
-- /images/cases/engawa体育馆/10.jpg
-- /images/cases/engawa体育馆/11.jpg
-- /images/cases/engawa体育馆/12.jpg
-- /images/cases/engawa体育馆/13.jpg
-- /images/cases/engawa体育馆/14.jpg
-- /images/cases/engawa体育馆/15.jpg
-- /images/cases/engawa体育馆/2.jpg
-- /images/cases/engawa体育馆/3.jpg
-- /images/cases/engawa体育馆/4.jpg
-- /images/cases/engawa体育馆/5.jpg
-- /images/cases/engawa体育馆/6.jpg
-- /images/cases/engawa体育馆/7.jpg
-- /images/cases/engawa体育馆/8.jpg
-- /images/cases/engawa体育馆/9.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/10.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/1.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/11.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/12.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/13.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/14.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/15.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/2.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/3.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/4.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/5.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/6.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/7.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/8.jpg
+- http://localhost:5000/site-images/cases/engawa%E4%BD%93%E8%82%B2%E9%A6%86/9.jpg
 location: Ketzin/Havel, 德国
 materials:
 - 正交胶合木

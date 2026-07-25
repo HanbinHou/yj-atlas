@@ -367,8 +367,14 @@
   <script>
   async function openCaseReorder() {
     const items = await api('GET', '/api/content/cases');
+    // Sort same as website: order first, then mtime (reverse, so newest first = highest order)
+    const sorted = [...items].sort((a, b) => {
+      const orderA = (a.frontmatter && a.frontmatter.order) || 0;
+      const orderB = (b.frontmatter && b.frontmatter.order) || 0;
+      return orderB - orderA;
+    });
     const list = document.getElementById('case-reorder-list');
-    list.innerHTML = items.map(item => {
+    list.innerHTML = sorted.map(item => {
       const fm = item.frontmatter || {};
       return `<li class="reorder-item" draggable="true" data-slug="${item.slug}">
         <span class="drag-handle">&#9776;</span>
@@ -409,8 +415,9 @@
     const slugs = [...document.querySelectorAll('#case-reorder-list .reorder-item')].map(el => el.dataset.slug);
     const result = await api('POST', '/api/reorder-cases', { slugs });
     if (result.ok) {
-      toast('排序已保存！发布后生效');
+      toast('排序已保存');
       document.getElementById('case-reorder-modal').style.display = 'none';
+      reloadPage();
     }
   }
 
