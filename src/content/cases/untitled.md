@@ -2,14 +2,14 @@
 architect: 安藤忠雄（Tadao Ando）
 description: 这是一个用混凝土外壳封闭的狭长住宅，内部置入了一个无顶的中庭，迫使居住者在自然中穿行与生活。
 images:
-- /images/cases/住吉的長屋/01.jpg
-- /images/cases/住吉的長屋/02.jpg
-- /images/cases/住吉的長屋/03.jpg
-- /images/cases/住吉的長屋/04.jpg
-- /images/cases/住吉的長屋/05.jpg
-- /images/cases/住吉的長屋/06.jpg
-- /images/cases/住吉的長屋/07.jpg
-- /images/cases/住吉的長屋/08.jpg
+- http://localhost:5000/site-images/cases/%E4%BD%8F%E5%90%89%E7%9A%84%E9%95%B7%E5%B1%8B/04.jpg
+- http://localhost:5000/site-images/cases/%E4%BD%8F%E5%90%89%E7%9A%84%E9%95%B7%E5%B1%8B/01.jpg
+- http://localhost:5000/site-images/cases/%E4%BD%8F%E5%90%89%E7%9A%84%E9%95%B7%E5%B1%8B/02.jpg
+- http://localhost:5000/site-images/cases/%E4%BD%8F%E5%90%89%E7%9A%84%E9%95%B7%E5%B1%8B/03.jpg
+- http://localhost:5000/site-images/cases/%E4%BD%8F%E5%90%89%E7%9A%84%E9%95%B7%E5%B1%8B/05.jpg
+- http://localhost:5000/site-images/cases/%E4%BD%8F%E5%90%89%E7%9A%84%E9%95%B7%E5%B1%8B/06.jpg
+- http://localhost:5000/site-images/cases/%E4%BD%8F%E5%90%89%E7%9A%84%E9%95%B7%E5%B1%8B/07.jpg
+- http://localhost:5000/site-images/cases/%E4%BD%8F%E5%90%89%E7%9A%84%E9%95%B7%E5%B1%8B/08.jpg
 location: 大阪, 日本
 materials:
 - 清水混凝土
@@ -25,7 +25,6 @@ title: 住吉的长屋（Azuma House）
 type: 住宅
 year: 1976
 ---
-
 ---TITLE---
 住吉的长屋（Azuma House）
 ---ARCHITECT---
