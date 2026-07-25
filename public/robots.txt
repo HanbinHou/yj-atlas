@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://yjatlas.com/sitemap-index.xml

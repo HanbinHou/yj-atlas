@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@astrojs/mdx": "^7.0.3",
+    "@astrojs/sitemap": "^3.7.3",
     "@pagefind/default-ui": "^1.5.2",
     "astro": "^7.1.3",
     "pagefind": "^1.5.2"
