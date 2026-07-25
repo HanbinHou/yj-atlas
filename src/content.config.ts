@@ -14,6 +14,7 @@ const casesCollection = defineCollection({
     description: z.string(),
     status: z.string().optional(),
     images: z.array(z.string()).default([]),
+    order: z.number().optional(),
   }),
 });
 

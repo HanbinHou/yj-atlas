@@ -7,7 +7,12 @@ import { statSync } from 'node:fs';
 
 const allCases = (await getCollection('cases'))
   .map(c => ({ ...c, _mtime: statSync(c.filePath).mtimeMs }))
-  .sort((a, b) => b._mtime - a._mtime);
+  .sort((a, b) => {
+    const orderA = a.data.order ?? 0;
+    const orderB = b.data.order ?? 0;
+    if (orderA !== orderB) return orderB - orderA;
+    return b._mtime - a._mtime;
+  });
 
 // Extract unique filter values
 const architects = [...new Set(allCases.map(c => c.data.architect))].sort();

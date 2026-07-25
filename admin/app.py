@@ -120,6 +120,25 @@ def api_reorder_images():
     md_file.write_text("\n".join(lines), encoding="utf-8")
     return jsonify({"ok": True})
 
+@app.route("/api/reorder-cases", methods=["POST"])
+def api_reorder_cases():
+    """Update the order field on all cases based on the provided list."""
+    slugs_order = request.json.get("slugs", [])
+    for i, slug in enumerate(slugs_order):
+        md_file = CASES_DIR / f"{slug}.md"
+        if md_file.exists():
+            text = md_file.read_text(encoding="utf-8")
+            parts = text.split("---", 2)
+            if len(parts) >= 3:
+                fm = yaml.safe_load(parts[1]) or {}
+                fm["order"] = len(slugs_order) - i
+                lines = ["---"]
+                lines.append(yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip())
+                lines.append("---")
+                lines.append(parts[2].strip())
+                md_file.write_text("\n".join(lines), encoding="utf-8")
+    return jsonify({"ok": True})
+
 @app.route("/site-images/<path:subpath>")
 def serve_site_images(subpath):
     """Proxy images from the Astro public/images/ directory."""

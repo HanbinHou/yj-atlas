@@ -4,6 +4,9 @@
 
 <div style="margin-bottom: 1rem;">
   <button class="btn btn-accent" onclick="showAddForm()">+ 新增{{ label }}</button>
+  {% if type == 'cases' %}
+  <button class="btn btn-outline" onclick="openCaseReorder()" style="margin-left:0.5rem;">📋 排序项目</button>
+  {% endif %}
   <button class="btn btn-outline" onclick="location.reload()" style="margin-left:0.5rem;">刷新</button>
 </div>
 
@@ -346,6 +349,75 @@
     if (e && e.target && e.target !== e.currentTarget) return;
     document.getElementById('edit-modal').style.display = 'none';
   }
+
+  // Case reorder
+  <div id="case-reorder-modal" class="modal-overlay" style="display:none;" onclick="closeCaseReorder(event)">
+    <div class="modal-box" onclick="event.stopPropagation()" style="max-height:80vh;overflow-y:auto;">
+      <h3 style="font-weight:400; margin-bottom:0.5rem;">📋 项目排序</h3>
+      <p style="font-size:0.82rem; color:var(--text2); margin-bottom:1rem;">拖放调整顺序，越靠上越优先显示。保存后需发布生效。</p>
+      <ul id="case-reorder-list" style="list-style:none;"></ul>
+      <div style="margin-top:1rem; display:flex; gap:0.5rem;">
+        <button class="btn btn-accent" onclick="saveCaseReorder()">保存顺序</button>
+        <button class="btn btn-outline" onclick="closeCaseReorder()">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  async function openCaseReorder() {
+    const items = await api('GET', '/api/content/cases');
+    const list = document.getElementById('case-reorder-list');
+    list.innerHTML = items.map(item => {
+      const fm = item.frontmatter || {};
+      return `<li class="reorder-item" draggable="true" data-slug="${item.slug}">
+        <span class="drag-handle">&#9776;</span>
+        <strong>${fm.title || item.slug}</strong>
+        <span class="path">${fm.architect || ''} · ${fm.year || ''}</span>
+      </li>`;
+    }).join('');
+
+    list.querySelectorAll('.reorder-item').forEach(item => {
+      item.addEventListener('dragstart', e => { e.dataTransfer.effectAllowed = 'move'; item.classList.add('dragging'); });
+      item.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+      item.addEventListener('dragenter', e => { e.preventDefault(); item.classList.add('drag-over'); });
+      item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+      item.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        const dragging = list.querySelector('.dragging');
+        if (dragging !== this) {
+          const items = [...list.querySelectorAll('.reorder-item')];
+          const fromIdx = items.indexOf(dragging);
+          const toIdx = items.indexOf(this);
+          if (fromIdx < toIdx) {
+            list.insertBefore(dragging, this.nextSibling);
+          } else {
+            list.insertBefore(dragging, this);
+          }
+        }
+      });
+      item.addEventListener('dragend', () => {
+        list.querySelectorAll('.reorder-item').forEach(el => el.classList.remove('dragging','drag-over'));
+      });
+    });
+
+    document.getElementById('case-reorder-modal').style.display = 'flex';
+  }
+
+  async function saveCaseReorder() {
+    const slugs = [...document.querySelectorAll('#case-reorder-list .reorder-item')].map(el => el.dataset.slug);
+    const result = await api('POST', '/api/reorder-cases', { slugs });
+    if (result.ok) {
+      toast('排序已保存！发布后生效');
+      document.getElementById('case-reorder-modal').style.display = 'none';
+    }
+  }
+
+  function closeCaseReorder(e) {
+    if (e && e.target && e.target !== e.currentTarget) return;
+    document.getElementById('case-reorder-modal').style.display = 'none';
+  }
+  </script>
 
   function closeReorderModal() {
     document.getElementById('reorder-modal').style.display = 'none';
