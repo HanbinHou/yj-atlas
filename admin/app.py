@@ -561,7 +561,7 @@ def api_research_material():
         all_imgs.extend(search_images(q, 3))
         if len(all_imgs) >= 6: break
     slug = data.get("slug", "")
-    img_paths = download_images(all_imgs[:6], slug)
+    img_paths = download_images(all_imgs[:6], slug, "materials")
 
     # Build and save MD
     fm = {

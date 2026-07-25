@@ -396,9 +396,9 @@ def search_images(query: str, count: int = 8) -> list[dict]:
     return results[:count]
 
 
-def download_images(image_urls: list[dict], slug: str) -> list[str]:
-    """Download images to public/images/cases/{slug}/, return list of paths."""
-    dest_dir = PUBLIC_IMG / "cases" / slug
+def download_images(image_urls: list[dict], slug: str, content_type: str = "cases") -> list[str]:
+    """Download images to public/images/{content_type}/{slug}/, return list of paths."""
+    dest_dir = PUBLIC_IMG / content_type / slug
     dest_dir.mkdir(parents=True, exist_ok=True)
     paths = []
 
@@ -415,7 +415,7 @@ def download_images(image_urls: list[dict], slug: str) -> list[str]:
             req = Request(url, headers={"User-Agent": "YJAtlas/1.0"})
             with urlopen(req, timeout=30) as resp:
                 dest_file.write_bytes(resp.read())
-            paths.append(f"/images/cases/{slug}/{dest_file.name}")
+            paths.append(f"/images/{content_type}/{slug}/{dest_file.name}")
             time.sleep(0.3)  # Rate limit
         except Exception as e:
             print(f"[download error] {url}: {e}")
