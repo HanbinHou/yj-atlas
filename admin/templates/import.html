@@ -9,7 +9,8 @@
       <label>文件夹路径</label>
       <input type="text" id="crawler-folder" placeholder="例如：Y:\HouHanbin\afasia\2026-07-23" />
     </div>
-    <div class="form-group" style="align-self: flex-end;">
+    <div class="form-group" style="align-self: flex-end; display:flex; gap:0.5rem;">
+      <button class="btn btn-outline" onclick="pickFolder()">📁 选择文件夹</button>
       <button class="btn btn-primary" onclick="scanFolder()">扫描项目</button>
     </div>
   </div>
@@ -21,6 +22,13 @@
 <div id="projects-area"></div>
 
 <script>
+  async function pickFolder() {
+    const result = await api('POST', '/api/pick-folder');
+    if (result.folder) {
+      document.getElementById('crawler-folder').value = result.folder;
+    }
+  }
+
   async function scanFolder() {
     const folder = document.getElementById('crawler-folder').value.trim();
     if (!folder) { toast('请输入文件夹路径', 'error'); return; }
