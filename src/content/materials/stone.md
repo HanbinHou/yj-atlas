@@ -1,30 +1,30 @@
 ---
-title: 石材
 category: 结构材料
-subcategory: 天然材料
-scenarios:
-  - 承重墙
-  - 饰面
-  - 景观铺装
-  - 雕塑
 description: 石材是人类最古老的建筑材料，从古埃及金字塔到当代的精致石砌立面，始终保持着独特的建筑表现力。现代技术使其可以以极薄板片形式用于幕墙。
+images:
+- /images/materials/stone-01.jpg
 properties:
-  - name: 密度
-    value: 2600-2800 kg/m³
-  - name: 抗压强度
-    value: 100-250 MPa (花岗岩)
-  - name: 吸水率
-    value: 0.1-0.5% (花岗岩), 1-5% (石灰岩)
-  - name: 莫氏硬度
-    value: 6-7 (花岗岩), 3-4 (大理石)
+- name: 密度
+  value: 2600-2800 kg/m³
+- name: 抗压强度
+  value: 100-250 MPa (花岗岩)
+- name: 吸水率
+  value: 0.1-0.5% (花岗岩), 1-5% (石灰岩)
+- name: 莫氏硬度
+  value: 6-7 (花岗岩), 3-4 (大理石)
+scenarios:
+- 承重墙
+- 饰面
+- 景观铺装
+- 雕塑
+subcategory: 天然材料
 tags:
-  - 天然材料
-  - 砌体
-  - 饰面
-  - 地域材料
-image: /images/materials/stone-01.jpg
+- 天然材料
+- 砌体
+- 饰面
+- 地域材料
+title: 石材
 ---
-
 ## 概述
 
 石材建筑的灵魂在于"真实性"——每一块石头都有独特的纹理、色泽和历史痕迹。从阿尔瓦·阿尔托的珊纳特赛罗市政厅到卒母托的瓦尔斯温泉浴场，石材在伟大建筑师手中不仅是结构材料，更是光线、质感和时间的载体。

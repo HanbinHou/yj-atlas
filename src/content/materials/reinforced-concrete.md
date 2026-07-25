@@ -1,32 +1,32 @@
 ---
-title: 钢筋混凝土
 category: 结构材料
-subcategory: 人工石材
-scenarios:
-  - 框架结构
-  - 剪力墙
-  - 壳体结构
-  - 大跨度结构
 description: 钢筋混凝土是20世纪最重要的建筑材料之一，由混凝土（抗压）和钢筋（抗拉）组合而成。自19世纪末发明以来，彻底改变了建筑的形式和尺度可能性。
+images:
+- /images/materials/concrete-01.jpg
 properties:
-  - name: 密度
-    value: 2400 kg/m³
-  - name: 抗压强度
-    value: C20–C80 (20-80 MPa)
-  - name: 弹性模量
-    value: 30-36 GPa
-  - name: 耐火等级
-    value: A级 (不燃)
-  - name: 耐久年限
-    value: 50-100年
+- name: 密度
+  value: 2400 kg/m³
+- name: 抗压强度
+  value: C20–C80 (20-80 MPa)
+- name: 弹性模量
+  value: 30-36 GPa
+- name: 耐火等级
+  value: A级 (不燃)
+- name: 耐久年限
+  value: 50-100年
+scenarios:
+- 框架结构
+- 剪力墙
+- 壳体结构
+- 大跨度结构
+subcategory: 人工石材
 tags:
-  - 结构
-  - 框架
-  - 壳体
-  - 现代主义
-image: /images/materials/concrete-01.jpg
+- 结构
+- 框架
+- 壳体
+- 现代主义
+title: 钢筋混凝土
 ---
-
 ## 概述
 
 钢筋混凝土（Reinforced Concrete）由混凝土和钢筋两种材料复合而成。混凝土提供抗压强度，钢筋提供抗拉强度，二者的热膨胀系数几乎相同，确保在温度变化时不会因膨胀差异而产生内部应力。

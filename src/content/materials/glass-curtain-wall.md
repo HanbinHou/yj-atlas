@@ -1,30 +1,30 @@
 ---
-title: 玻璃幕墙
 category: 围护材料
-subcategory: 外墙系统
-scenarios:
-  - 高层办公建筑
-  - 商业综合体
-  - 展示空间
-  - 温室
 description: 玻璃幕墙是现代建筑最具标志性的围护体系之一，将玻璃从传统的"窗户"转变为整面"墙体"。从密斯的玻璃盒子到当代的参数化幕墙，始终处于建筑技术和美学的前沿。
+images:
+- /images/materials/curtain-wall-01.jpg
 properties:
-  - name: 可见光透过率
-    value: 40-70%
-  - name: 传热系数 (U值)
-    value: 1.0-2.0 W/(m²·K)
-  - name: 隔声量
-    value: 30-45 dB
-  - name: 自重
-    value: 40-60 kg/m² (含框架)
+- name: 可见光透过率
+  value: 40-70%
+- name: 传热系数 (U值)
+  value: 1.0-2.0 W/(m²·K)
+- name: 隔声量
+  value: 30-45 dB
+- name: 自重
+  value: 40-60 kg/m² (含框架)
+scenarios:
+- 高层办公建筑
+- 商业综合体
+- 展示空间
+- 温室
+subcategory: 外墙系统
 tags:
-  - 幕墙
-  - 透明性
-  - 高层建筑
-  - Low-E玻璃
-image: /images/materials/curtain-wall-01.jpg
+- 幕墙
+- 透明性
+- 高层建筑
+- Low-E玻璃
+title: 玻璃幕墙
 ---
-
 ## 概述
 
 玻璃幕墙（Glass Curtain Wall）是悬挂在建筑主体结构外侧的非承重围护系统，由玻璃面板和支撑框架（铝合金或钢结构）组成。它与传统窗墙体系的根本区别在于：幕墙不承受楼板荷载，只传递自重和风荷载到主体结构。

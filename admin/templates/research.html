@@ -172,11 +172,11 @@
       frontmatter = {
         title: document.getElementById('edit-title').value,
         category: document.getElementById('edit-type').value,
-        scenarios: [],
+        scenarios: document.getElementById('edit-materials').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
         tags: document.getElementById('edit-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
         description: document.getElementById('edit-description').value,
         properties: [],
-        image: currentData.image_paths?.[0] || '',
+        images: currentData.image_paths || [],
       };
     } else {
       frontmatter = {

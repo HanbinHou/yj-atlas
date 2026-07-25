@@ -35,7 +35,7 @@ const materialsCollection = defineCollection({
       url: z.string().optional(),
     }).optional(),
     tags: z.array(z.string()).default([]),
-    image: z.string().optional(),
+    images: z.array(z.string()).default([]),
   }),
 });
 

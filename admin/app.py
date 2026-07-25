@@ -574,7 +574,7 @@ def api_research_material():
         "description": data.get("description", ""),
         "tags": [t.strip() for t in data.get("tags", "").split(",") if t.strip()],
         "properties": data.get("properties", []),
-        "image": img_paths[0] if img_paths else "",
+        "images": img_paths,
     }
     body = data.get("body", "")
     lines = ["---"]

@@ -1,33 +1,33 @@
 ---
-title: 木材
 category: 结构材料
-subcategory: 天然材料
-scenarios:
-  - 轻型框架结构
-  - 大跨度木结构
-  - 室内饰面
-  - 家具
 description: 木材是最古老的建筑材料之一，在现代建筑中经历了从被淘汰到复兴的过程。工程木产品（CLT、Glulam）的发展使木材重新成为高层和大跨度建筑的结构选择。
+images:
+- /images/materials/wood-01.jpg
 properties:
-  - name: 密度
-    value: 350-700 kg/m³ (软木), 600-1000 kg/m³ (硬木)
-  - name: 顺纹抗压强度
-    value: 30-60 MPa
-  - name: 弹性模量
-    value: 8-16 GPa
-  - name: 耐火性能
-    value: 表面炭化后形成隔热层
-  - name: 碳储存
-    value: 每吨木材储存约1.8吨CO₂
+- name: 密度
+  value: 350-700 kg/m³ (软木), 600-1000 kg/m³ (硬木)
+- name: 顺纹抗压强度
+  value: 30-60 MPa
+- name: 弹性模量
+  value: 8-16 GPa
+- name: 耐火性能
+  value: 表面炭化后形成隔热层
+- name: 碳储存
+  value: 每吨木材储存约1.8吨CO₂
+scenarios:
+- 轻型框架结构
+- 大跨度木结构
+- 室内饰面
+- 家具
+subcategory: 天然材料
 tags:
-  - 可持续
-  - CLT
-  - 木结构
-  - 自然材料
-  - 低碳
-image: /images/materials/wood-01.jpg
+- 可持续
+- CLT
+- 木结构
+- 自然材料
+- 低碳
+title: 木材
 ---
-
 ## 概述
 
 木材作为一种可再生、低碳的建筑材料，正在经历前所未有的复兴。过去二十年中，工程木产品的技术进步——特别是交叉层压木（CLT）和胶合木（Glulam）——彻底改变了木材在建筑结构中的应用可能性。传统的"木材只适合低层建筑"的观念已经被打破，全球已建成多座超过80米的木结构高层建筑。
