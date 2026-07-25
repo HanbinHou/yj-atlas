@@ -4,7 +4,7 @@
 
 <div style="margin-bottom: 1rem;">
   <button class="btn btn-accent" onclick="showAddForm()">+ 新增{{ label }}</button>
-  {% if type == 'cases' %}
+  {% if type in ('cases', 'materials') %}
   <button class="btn btn-outline" onclick="openCaseReorder()" style="margin-left:0.5rem;">📋 排序项目</button>
   {% endif %}
   <button class="btn btn-outline" onclick="location.reload()" style="margin-left:0.5rem;">刷新</button>
@@ -369,8 +369,8 @@
 
   <script>
   async function openCaseReorder() {
-    const items = await api('GET', '/api/content/cases');
-    // Sort same as website: order first, then mtime (reverse, so newest first = highest order)
+    const items = await api('GET', `/api/content/${TYPE}`);
+    // Sort same as website: order first
     const sorted = [...items].sort((a, b) => {
       const orderA = (a.frontmatter && a.frontmatter.order) || 0;
       const orderB = (b.frontmatter && b.frontmatter.order) || 0;
@@ -416,7 +416,7 @@
 
   async function saveCaseReorder() {
     const slugs = [...document.querySelectorAll('#case-reorder-list .reorder-item')].map(el => el.dataset.slug);
-    const result = await api('POST', '/api/reorder-cases', { slugs });
+    const result = await api('POST', '/api/reorder-cases', { slugs, type: TYPE });
     if (result.ok) {
       toast('排序已保存');
       document.getElementById('case-reorder-modal').style.display = 'none';

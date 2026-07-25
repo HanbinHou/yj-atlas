@@ -66,8 +66,8 @@ def list_content(content_type: str) -> list[dict]:
         data["filename"] = md_file.name
         data["slug"] = md_file.stem
         items.append(data)
-    # Sort cases by order desc, then mtime desc
-    if content_type == "cases":
+    # Sort by order desc (cases + materials)
+    if content_type in ("cases", "materials"):
         items.sort(key=lambda x: (x.get("frontmatter", {}).get("order", 0), x.get("slug", "")), reverse=True)
     return items
 
@@ -133,10 +133,13 @@ def api_reorder_images():
 
 @app.route("/api/reorder-cases", methods=["POST"])
 def api_reorder_cases():
-    """Update the order field on all cases based on the provided list."""
+    """Update the order field based on the provided list. Works for cases and materials."""
     slugs_order = request.json.get("slugs", [])
+    content_type = request.json.get("type", "cases")
+    dir_map = {"cases": CASES_DIR, "materials": MATERIALS_DIR}
+    target = dir_map.get(content_type, CASES_DIR)
     for i, slug in enumerate(slugs_order):
-        md_file = CASES_DIR / f"{slug}.md"
+        md_file = target / f"{slug}.md"
         if md_file.exists():
             text = md_file.read_text(encoding="utf-8")
             parts = text.split("---", 2)

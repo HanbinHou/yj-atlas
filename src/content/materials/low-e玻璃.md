@@ -4,6 +4,7 @@ description: 具有极低表面辐射率的镀膜玻璃，能高效反射红外�
 image: http://localhost:5000/site-images/materials/low-e%E7%8E%BB%E7%92%83/699239aa3c8b4c04b4244580f8a1cefd.jpeg
 images:
 - /images/materials/low-e玻璃/699239aa3c8b4c04b4244580f8a1cefd.jpeg
+- /images/materials/low-e玻璃/70351cd6002a41bfa10c53a9ef5dccb8.jpeg
 properties:
 - name: 传热系数 (U值)
   value: 1.0-1.8 W/(m²·K) (视配置而定)
