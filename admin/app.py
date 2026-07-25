@@ -118,7 +118,11 @@ def api_reorder_images():
         return jsonify({"error": "invalid format"}), 400
 
     fm = yaml.safe_load(parts[1]) or {}
-    fm["images"] = new_order
+    # Materials use 'image' (singular), cases/books use 'images'
+    if content_type == "materials":
+        fm["image"] = new_order[0] if new_order else ""
+    else:
+        fm["images"] = new_order
 
     lines = ["---"]
     lines.append(yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip())
