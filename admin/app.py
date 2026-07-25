@@ -506,23 +506,15 @@ def api_import_enriched():
 @app.route("/api/pick-folder", methods=["POST"])
 def api_pick_folder():
     """Open a native folder picker and return the selected path."""
-    import subprocess, sys
     try:
-        # Try PowerShell folder picker
-        ps_script = '''
-        Add-Type -AssemblyName System.Windows.Forms
-        $f = New-Object System.Windows.Forms.FolderBrowserDialog
-        $f.Description = "选择爬虫日期文件夹"
-        $f.RootFolder = "MyComputer"
-        if ($f.ShowDialog() -eq "OK") { $f.SelectedPath }
-        '''
-        result = subprocess.run(
-            ["powershell", "-NoProfile", "-Command", ps_script],
-            capture_output=True, text=True, timeout=30, encoding="utf-8", errors="replace",
-        )
-        folder = result.stdout.strip()
+        from tkinter import Tk, filedialog
+        root = Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        folder = filedialog.askdirectory(title="选择爬虫日期文件夹")
+        root.destroy()
         if folder:
-            return jsonify({"folder": folder})
+            return jsonify({"folder": str(Path(folder))})
     except Exception:
         pass
     return jsonify({"folder": ""})
