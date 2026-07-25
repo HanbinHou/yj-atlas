@@ -168,8 +168,10 @@
       reorderFile = filename;
       reorderType = type;
       const data = await api('GET', `/api/content/${type}/${encodeURIComponent(filename)}`);
-      const images = (data.frontmatter && data.frontmatter.images) ||
-                     (data.frontmatter && data.frontmatter.image ? [data.frontmatter.image] : []) || [];
+      const imgArr = data.frontmatter?.images;
+      const singleImg = data.frontmatter?.image;
+      const images = (imgArr && imgArr.length > 0) ? imgArr
+                     : (singleImg ? [singleImg] : []);
       const list = document.getElementById('reorder-list');
       list.innerHTML = images.map((src, i) => `
         <li class="reorder-item" draggable="true" data-index="${i}">
