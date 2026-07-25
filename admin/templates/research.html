@@ -3,14 +3,18 @@
 <h2 class="page-title">🔬 AI 研究导入</h2>
 
 <div class="card">
-  <h3>研究建筑项目</h3>
-  <p style="color: var(--text2); margin-bottom: 1rem;">
-    输入项目名称，AI 自动搜索建筑信息（建筑师、年份、材料、历史等），
-    生成标准格式 Markdown，并下载高清图片。
-  </p>
-  <div class="form-row">
+  <h3>AI 研究导入</h3>
+  <div style="display:flex; gap:1rem; margin-bottom:1rem;">
+    <div class="form-group">
+      <label>内容类型</label>
+      <select id="research-type" onchange="updatePlaceholder()">
+        <option value="case">🏛️ 案例</option>
+        <option value="material">🧱 材料</option>
+        <option value="book">📚 书目</option>
+      </select>
+    </div>
     <div class="form-group" style="flex:1;">
-      <label>项目名称</label>
+      <label>名称</label>
       <input type="text" id="project-name" placeholder="例如：流水别墅 / Fallingwater / 龙美术馆西岸馆" />
     </div>
     <div class="form-group" style="align-self: flex-end;">
@@ -49,6 +53,18 @@
 <script>
   let currentData = null;
 
+  function updatePlaceholder() {
+    const type = document.getElementById('research-type').value;
+    const input = document.getElementById('project-name');
+    const placeholders = {
+      case: '例如：流水别墅 / Fallingwater / 龙美术馆西岸馆',
+      material: '例如：清水混凝土 / Cross Laminated Timber / Low-E玻璃',
+      book: '例如：走向新建筑 / S M L XL / 建筑的永恒之道',
+    };
+    input.placeholder = placeholders[type] || '';
+  }
+  updatePlaceholder();
+
   // Check API key on load
   fetch('/api/settings').then(r => r.json()).then(d => {
     if (!d.has_key) {
@@ -79,26 +95,29 @@
       '<p><span class="status-dot running"></span> AI 正在搜索和研究，可能需要 30-60 秒...</p>';
 
     try {
-      const result = await api('POST', '/api/research-project', { project_name: name });
+      const type = document.getElementById('research-type').value;
+      const endpoints = { case: '/api/research-project', material: '/api/research-material', book: '/api/research-book' };
+      const result = await api('POST', endpoints[type], { project_name: name });
       if (result.error) {
         document.getElementById('research-status').innerHTML = `<p style="color:var(--red);">${result.error}</p>`;
         return;
       }
 
       currentData = result;
+      currentData._type = type;
       document.getElementById('research-result').style.display = 'block';
       document.getElementById('result-title').textContent = result.title;
       document.getElementById('edit-title').value = result.title || '';
       document.getElementById('edit-architect').value = result.architect || '';
       document.getElementById('edit-year').value = result.year || '';
-      document.getElementById('edit-type').value = result.type || '';
+      document.getElementById('edit-type').value = result.type || result.category || '';
       document.getElementById('edit-location').value = result.location || '';
       document.getElementById('edit-materials').value = result.materials || '';
       document.getElementById('edit-tags').value = result.tags || '';
-      document.getElementById('edit-description').value = result.description || '';
+      document.getElementById('edit-description').value = result.description || result.summary || '';
       document.getElementById('edit-body').value = result.raw || '';
       document.getElementById('images-status').textContent =
-        `已下载 ${result.images_downloaded} 张图片`;
+        `已下载 ${result.images_downloaded || 0} 张图片`;
 
       // Preview images
       const preview = document.getElementById('images-preview');
@@ -118,8 +137,11 @@
 
   async function saveToSite() {
     if (!currentData) return;
-    const result = await api('POST', `/api/save/cases`, {
-      frontmatter: {
+    const type = currentData._type || 'cases';
+    let frontmatter = {};
+
+    if (type === 'case') {
+      frontmatter = {
         title: document.getElementById('edit-title').value,
         architect: document.getElementById('edit-architect').value,
         year: parseInt(document.getElementById('edit-year').value) || 0,
@@ -129,7 +151,32 @@
         tags: document.getElementById('edit-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
         description: document.getElementById('edit-description').value,
         images: currentData.image_paths || [],
-      },
+      };
+    } else if (type === 'material') {
+      frontmatter = {
+        title: document.getElementById('edit-title').value,
+        category: document.getElementById('edit-type').value,
+        scenarios: [],
+        tags: document.getElementById('edit-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        description: document.getElementById('edit-description').value,
+        properties: [],
+        image: currentData.image_paths?.[0] || '',
+      };
+    } else {
+      frontmatter = {
+        title: document.getElementById('edit-title').value,
+        author: document.getElementById('edit-architect').value,
+        year: parseInt(document.getElementById('edit-year').value) || null,
+        category: document.getElementById('edit-type').value,
+        summary: document.getElementById('edit-description').value,
+        tags: document.getElementById('edit-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        readingPath: 'intermediate',
+      };
+    }
+
+    const saveEndpoints = { case: 'cases', material: 'materials', book: 'books' };
+    const result = await api('POST', `/api/save/${saveEndpoints[type]}`, {
+      frontmatter,
       body: document.getElementById('edit-body').value,
     });
     if (result.ok) {

@@ -537,6 +537,76 @@ def api_pick_folder():
 
 # ─── AI Research ──────────────────────────────────────
 
+@app.route("/api/research-material", methods=["POST"])
+def api_research_material():
+    from researcher import get_api_key, research_material, search_images, download_images
+    import yaml as _yaml
+
+    material_name = request.json.get("project_name", "").strip()
+    if not material_name: return jsonify({"error": "请输入材料名称"}), 400
+    if not get_api_key(): return jsonify({"error": "请先配置 DeepSeek API Key"}), 400
+
+    data = research_material(material_name)
+    if "error" in data: return jsonify(data), 500
+
+    # Images
+    queries = [q.strip() for q in data.get("image_queries", "").split("\n") if q.strip()]
+    if not queries: queries = [f"{data.get('title','')} building material"]
+    all_imgs = []
+    for q in queries[:3]:
+        all_imgs.extend(search_images(q, 3))
+        if len(all_imgs) >= 6: break
+    slug = data.get("slug", "")
+    img_paths = download_images(all_imgs[:6], slug)
+
+    # Build and save MD
+    fm = {
+        "title": data.get("title", ""), "category": data.get("category", ""),
+        "scenarios": [s.strip() for s in data.get("scenarios", "").split(",") if s.strip()],
+        "description": data.get("description", ""),
+        "tags": [t.strip() for t in data.get("tags", "").split(",") if t.strip()],
+        "properties": data.get("properties", []),
+        "image": img_paths[0] if img_paths else "",
+    }
+    body = data.get("body", "")
+    lines = ["---"]
+    lines.append(_yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip())
+    lines.append("---")
+    lines.append("")
+    lines.append(body)
+    (MATERIALS_DIR / f"{slug}.md").write_text("\n".join(lines), encoding="utf-8")
+    return jsonify({"ok": True, "slug": slug, "title": data.get("title", ""), "images_downloaded": len(img_paths)})
+
+@app.route("/api/research-book", methods=["POST"])
+def api_research_book():
+    from researcher import get_api_key, research_book
+    import yaml as _yaml
+
+    book_name = request.json.get("project_name", "").strip()
+    if not book_name: return jsonify({"error": "请输入书名"}), 400
+    if not get_api_key(): return jsonify({"error": "请先配置 DeepSeek API Key"}), 400
+
+    data = research_book(book_name)
+    if "error" in data: return jsonify(data), 500
+
+    slug = data.get("slug", "")
+    fm = {
+        "title": data.get("title", ""), "author": data.get("author", ""),
+        "category": data.get("category", ""),
+        "year": int(data.get("year", "0")) or None,
+        "summary": data.get("summary", ""),
+        "tags": [t.strip() for t in data.get("tags", "").split(",") if t.strip()],
+        "readingPath": data.get("readingPath", "intermediate"),
+    }
+    body = data.get("body", "")
+    lines = ["---"]
+    lines.append(_yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip())
+    lines.append("---")
+    lines.append("")
+    lines.append(body)
+    (BOOKS_DIR / f"{slug}.md").write_text("\n".join(lines), encoding="utf-8")
+    return jsonify({"ok": True, "slug": slug, **fm})
+
 @app.route("/api/settings", methods=["GET", "POST"])
 def api_settings():
     from researcher import get_api_key, set_api_key

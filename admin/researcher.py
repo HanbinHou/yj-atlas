@@ -137,6 +137,62 @@ RESEARCH_PROMPT = """你是一位建筑学研究助手。请对以下建筑项�
 ---IMAGE_QUERIES---
 [用于搜索高质量建筑图片的英文关键词，每行一个，共5个。优先使用摄影师名字+建筑名组合，如"Fallingwater photographer Ezra Stoller"]"""
 
+MATERIAL_RESEARCH_PROMPT = """你是一位建筑材料专家。请对以下建筑材料进行深入研究，输出严格格式化的内容。
+
+材料名称：{project_name}
+
+---TITLE---
+[材料的中文名称]
+---CATEGORY---
+[从以下选择：结构材料/围护材料/饰面材料/保温材料/防水材料/声学材料/其他]
+---SCENARIOS---
+[适用场景，用中文逗号分隔，如：框架结构, 外墙, 室内饰面]
+---DESCRIPTION---
+[一句话概述，不超过80个汉字，突出核心特征与建筑价值]
+---TAGS---
+[3-5个标签，用中文逗号分隔]
+---PROP_NAME_1---
+[性能参数1名称，如：密度]
+---PROP_VAL_1---
+[性能参数1值，如：2400 kg/m³]
+---PROP_NAME_2---
+[性能参数2名称]
+---PROP_VAL_2---
+[性能参数2值]
+---PROP_NAME_3---
+[性能参数3名称]
+---PROP_VAL_3---
+[性能参数3值]
+---PROP_NAME_4---
+[性能参数4名称]
+---PROP_VAL_4---
+[性能参数4值]
+---BODY---
+[详细说明材料的组成、生产工艺、建筑表现、典型应用案例，3-5段]
+---IMAGE_QUERIES---
+[用于搜索材料图片的英文关键词，每行一个，共4个]"""
+
+BOOK_RESEARCH_PROMPT = """你是一位建筑文献研究助手。请对以下建筑书籍进行深入研究，输出严格格式化的内容。
+
+书名：{project_name}
+
+---TITLE---
+[书名]
+---AUTHOR---
+[作者姓名]
+---YEAR---
+[出版年份，只输出数字]
+---CATEGORY---
+[从以下选择：建筑基础/理论与历史/设计方法论/结构与技术/材料与构造/环境调控/设计表达/城市设计/建筑图集/其他]
+---SUMMARY---
+[200字以内的内容摘要，涵盖核心论点和价值]
+---TAGS---
+[3-5个标签，用中文逗号分隔]
+---READING_PATH---
+[入门/进阶/深度]
+---BODY---
+[详细介绍书籍背景、章节结构、核心观点、学术影响，3-5段]"""
+
 
 def _deepseek_chat(system_prompt: str, user_message: str, max_tokens: int = 4096) -> str:
     """Call DeepSeek API (OpenAI-compatible)."""
@@ -365,6 +421,109 @@ def download_images(image_urls: list[dict], slug: str) -> list[str]:
             print(f"[download error] {url}: {e}")
 
     return paths
+
+
+def research_material(material_name: str) -> dict:
+    """Research a material via web search + DeepSeek."""
+    api_key = get_api_key()
+    if not api_key:
+        return {"error": "请先配置 DeepSeek API Key"}
+
+    web_results = _ddgs_search(f"{material_name} building material architecture", count=5)
+    page_texts = []
+    for r in web_results[:4]:
+        text = fetch_page_text(r.get("url", ""), 2500)
+        if text:
+            page_texts.append(f"来源: {r.get('url','')}\n{text}")
+
+    sources_block = "\n\n---\n\n".join(page_texts) if page_texts else material_name
+    user_msg = f"搜索资料：\n{sources_block}\n\n{MATERIAL_RESEARCH_PROMPT.format(project_name=material_name)}"
+
+    text = _deepseek_chat(
+        system_prompt="你是一位建筑材料专家。基于搜索资料生成结构化的材料分析。必填所有字段。",
+        user_message=user_msg,
+    )
+    return _parse_material(text, material_name)
+
+
+def _parse_material(text: str, fallback_name: str) -> dict:
+    """Parse material research response."""
+    def extract(marker, txt):
+        pattern = rf'---{marker}---\s*\n(.*?)(?=\n---|\Z)'
+        m = re.search(pattern, txt, re.DOTALL)
+        return m.group(1).strip() if m else ""
+
+    props = []
+    for i in range(1, 5):
+        name = extract(f"PROP_NAME_{i}", text)
+        val = extract(f"PROP_VAL_{i}", text)
+        if name and val:
+            props.append({"name": name, "value": val})
+
+    slug = _slugify(extract("TITLE", text) or fallback_name)
+    if not slug or slug == "untitled":
+        slug = _slugify(fallback_name)
+
+    return {
+        "slug": slug,
+        "title": extract("TITLE", text) or fallback_name,
+        "category": extract("CATEGORY", text),
+        "scenarios": extract("SCENARIOS", text),
+        "description": extract("DESCRIPTION", text),
+        "tags": extract("TAGS", text),
+        "properties": props,
+        "body": extract("BODY", text),
+        "image_queries": extract("IMAGE_QUERIES", text),
+        "raw": text,
+    }
+
+
+def research_book(book_name: str) -> dict:
+    """Research a book via web search + DeepSeek (lightweight, no images)."""
+    api_key = get_api_key()
+    if not api_key:
+        return {"error": "请先配置 DeepSeek API Key"}
+
+    web_results = _ddgs_search(f"{book_name} architecture book", count=5)
+    page_texts = []
+    for r in web_results[:4]:
+        text = fetch_page_text(r.get("url", ""), 2500)
+        if text:
+            page_texts.append(f"来源: {r.get('url','')}\n{text}")
+
+    sources_block = "\n\n---\n\n".join(page_texts) if page_texts else book_name
+    user_msg = f"搜索资料：\n{sources_block}\n\n{BOOK_RESEARCH_PROMPT.format(project_name=book_name)}"
+
+    text = _deepseek_chat(
+        system_prompt="你是一位建筑文献研究助手。基于搜索资料输出结构化的书目信息。必填所有字段。",
+        user_message=user_msg,
+    )
+    return _parse_book(text, book_name)
+
+
+def _parse_book(text: str, fallback_name: str) -> dict:
+    """Parse book research response."""
+    def extract(marker, txt):
+        pattern = rf'---{marker}---\s*\n(.*?)(?=\n---|\Z)'
+        m = re.search(pattern, txt, re.DOTALL)
+        return m.group(1).strip() if m else ""
+
+    slug = _slugify(extract("TITLE", text) or fallback_name)
+    if not slug or slug == "untitled":
+        slug = _slugify(fallback_name)
+
+    return {
+        "slug": slug,
+        "title": extract("TITLE", text) or fallback_name,
+        "author": extract("AUTHOR", text),
+        "year": extract("YEAR", text),
+        "category": extract("CATEGORY", text),
+        "summary": extract("SUMMARY", text),
+        "tags": extract("TAGS", text),
+        "readingPath": extract("READING_PATH", text) or "intermediate",
+        "body": extract("BODY", text),
+        "raw": text,
+    }
 
 
 def _slugify(text: str) -> str:
