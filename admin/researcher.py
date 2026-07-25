@@ -404,12 +404,16 @@ def download_images(image_urls: list[dict], slug: str, content_type: str = "case
 
     for i, img_info in enumerate(image_urls):
         url = img_info["url"]
+        # Determine extension from URL or default to .jpg
         ext = ".jpg"
-        if ".png" in url.lower():
-            ext = ".png"
-        elif ".webp" in url.lower():
-            ext = ".webp"
+        for e in [".jpeg", ".png", ".webp", ".gif"]:
+            if e in url.lower():
+                ext = e
+                break
         dest_file = dest_dir / f"{i + 1:02d}{ext}"
+        # Skip if already exists
+        if dest_file.exists():
+            continue
 
         try:
             req = Request(url, headers={"User-Agent": "YJAtlas/1.0"})

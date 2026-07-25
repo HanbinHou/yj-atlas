@@ -1,7 +1,7 @@
 ---
 category: 围护材料
 description: 具有极低表面辐射率的镀膜玻璃，能高效反射红外线，实现隔热保温与透光的完美平衡。
-image: /images/materials/low-e玻璃/01.jpg
+image: /images/materials/low-e玻璃/699239aa3c8b4c04b4244580f8a1cefd.jpeg
 images: []
 properties:
 - name: 传热系数 (U值)
