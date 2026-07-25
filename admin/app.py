@@ -11,6 +11,10 @@ from datetime import datetime
 import yaml
 from flask import Flask, request, jsonify, render_template, send_from_directory
 
+# Ensure admin directory is on Python path for researcher imports
+import sys
+sys.path.insert(0, str(Path(__file__).parent))
+
 # ---- paths ----
 BASE_DIR = Path(__file__).resolve().parent.parent
 CONTENT_DIR = BASE_DIR / "src" / "content"
