@@ -13,6 +13,13 @@ const book = books.find(b => b.id === slug)!;
 
 const pathLabels: Record<string, string> = { beginner: '入门', intermediate: '进阶', advanced: '深度' };
 const hasLockedContent = !!(book.data.unlockCode && book.data.hiddenContent);
+
+// Find related cases by tag matching
+const allCases = await getCollection('cases');
+const relatedCases = allCases.filter(c => {
+  const sharedTags = (c.data.tags || []).filter(t => (book.data.tags || []).includes(t));
+  return sharedTags.length > 0;
+}).slice(0, 6);
 ---
 
 <BaseLayout title={book.data.title} description={book.data.summary}>
@@ -61,6 +68,17 @@ const hasLockedContent = !!(book.data.unlockCode && book.data.hiddenContent);
       <p>{book.data.summary}</p>
       <Fragment set:html={book.rendered?.html || book.body || ''} />
     </div>
+
+    {relatedCases.length > 0 && (
+      <section class="related-section">
+        <h3>相关案例</h3>
+        <ul class="related-list">
+          {relatedCases.map(c => (
+            <li><a href={`/cases/${c.id}/`}>{c.data.title}</a> — {c.data.architect}</li>
+          ))}
+        </ul>
+      </section>
+    )}
 
     <!-- Locked content section -->
     {hasLockedContent && (
