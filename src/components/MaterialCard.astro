@@ -5,8 +5,8 @@ const { material: m } = Astro.props;
 
 <article class="card">
   <a href={`/materials/${m.id}/`}>
-    {m.data.image ? (
-      <img class="card-image" src={m.data.image} alt={m.data.title} loading="lazy" />
+    {m.data.images && m.data.images.length > 0 ? (
+      <img class="card-image" src={m.data.images[0]} alt={m.data.title} loading="lazy" />
     ) : (
       <div class="card-image-placeholder">{m.data.title[0]}</div>
     )}
