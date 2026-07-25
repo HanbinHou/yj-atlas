@@ -31,19 +31,7 @@
       <button class="btn btn-accent" onclick="saveToSite()">✅ 导入到网站</button>
     </div>
 
-    <div class="form-row">
-      <div class="form-group"><label>标题</label><input id="edit-title" /></div>
-      <div class="form-group"><label>建筑师</label><input id="edit-architect" /></div>
-    </div>
-    <div class="form-row">
-      <div class="form-group"><label>年份</label><input id="edit-year" /></div>
-      <div class="form-group"><label>类型</label><input id="edit-type" /></div>
-      <div class="form-group"><label>地点</label><input id="edit-location" /></div>
-    </div>
-    <div class="form-group"><label>材料（逗号分隔）</label><input id="edit-materials" /></div>
-    <div class="form-group"><label>标签（逗号分隔）</label><input id="edit-tags" /></div>
-    <div class="form-group"><label>描述</label><input id="edit-description" /></div>
-    <div class="form-group"><label>正文（Markdown，可编辑）</label><textarea id="edit-body" rows="12"></textarea></div>
+    <div id="edit-form-fields"></div>
 
     <div id="images-status" style="margin-top: 0.5rem; font-size: 0.85rem; color: var(--text2);"></div>
     <div id="images-preview" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;"></div>
@@ -52,6 +40,42 @@
 
 <script>
   let currentData = null;
+
+  function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function buildEditForm(type, result) {
+    const container = document.getElementById('edit-form-fields');
+    let html = '';
+
+    if (type === 'case') {
+      html = `
+        <div class="form-row"><div class="form-group"><label>标题</label><input id="edit-title" value="${esc(result.title||'')}" /></div><div class="form-group"><label>建筑师</label><input id="edit-architect" value="${esc(result.architect||'')}" /></div></div>
+        <div class="form-row"><div class="form-group"><label>年份</label><input id="edit-year" value="${esc(result.year||'')}" /></div><div class="form-group"><label>类型</label><input id="edit-type" value="${esc(result.type||'')}" /></div><div class="form-group"><label>地点</label><input id="edit-location" value="${esc(result.location||'')}" /></div></div>
+        <div class="form-group"><label>材料（逗号分隔）</label><input id="edit-materials" value="${esc(result.materials||'')}" /></div>
+        <div class="form-group"><label>标签（逗号分隔）</label><input id="edit-tags" value="${esc(result.tags||'')}" /></div>
+        <div class="form-group"><label>描述</label><input id="edit-description" value="${esc(result.description||'')}" /></div>
+        <div class="form-group"><label>正文（Markdown，可编辑）</label><textarea id="edit-body" rows="12">${esc(result.raw||'')}</textarea></div>
+      `;
+    } else if (type === 'material') {
+      html = `
+        <div class="form-row"><div class="form-group"><label>名称</label><input id="edit-title" value="${esc(result.title||'')}" /></div><div class="form-group"><label>类别</label><input id="edit-type" value="${esc(result.category||'')}" /></div></div>
+        <div class="form-group"><label>适用场景（逗号分隔）</label><input id="edit-materials" value="${esc(result.scenarios||'')}" /></div>
+        <div class="form-group"><label>标签（逗号分隔）</label><input id="edit-tags" value="${esc(result.tags||'')}" /></div>
+        <div class="form-group"><label>描述</label><input id="edit-description" value="${esc(result.description||'')}" /></div>
+        <div class="form-group"><label>正文（Markdown，可编辑）</label><textarea id="edit-body" rows="12">${esc(result.raw||'')}</textarea></div>
+      `;
+    } else {
+      html = `
+        <div class="form-row"><div class="form-group"><label>书名</label><input id="edit-title" value="${esc(result.title||'')}" /></div><div class="form-group"><label>作者</label><input id="edit-architect" value="${esc(result.author||'')}" /></div></div>
+        <div class="form-row"><div class="form-group"><label>出版年份</label><input id="edit-year" value="${esc(result.year||'')}" /></div><div class="form-group"><label>分类</label><input id="edit-type" value="${esc(result.category||'')}" /></div></div>
+        <div class="form-group"><label>标签（逗号分隔）</label><input id="edit-tags" value="${esc(result.tags||'')}" /></div>
+        <div class="form-group"><label>摘要</label><input id="edit-description" value="${esc(result.summary||'')}" /></div>
+        <div class="form-group"><label>正文（Markdown，可编辑）</label><textarea id="edit-body" rows="12">${esc(result.raw||'')}</textarea></div>
+      `;
+    }
+    container.innerHTML = html;
+    document.getElementById('images-status').textContent = `已下载 ${result.images_downloaded || 0} 张图片`;
+  }
 
   function updatePlaceholder() {
     const type = document.getElementById('research-type').value;
@@ -107,17 +131,9 @@
       currentData._type = type;
       document.getElementById('research-result').style.display = 'block';
       document.getElementById('result-title').textContent = result.title;
-      document.getElementById('edit-title').value = result.title || '';
-      document.getElementById('edit-architect').value = result.architect || '';
-      document.getElementById('edit-year').value = result.year || '';
-      document.getElementById('edit-type').value = result.type || result.category || '';
-      document.getElementById('edit-location').value = result.location || '';
-      document.getElementById('edit-materials').value = result.materials || '';
-      document.getElementById('edit-tags').value = result.tags || '';
-      document.getElementById('edit-description').value = result.description || result.summary || '';
-      document.getElementById('edit-body').value = result.raw || '';
-      document.getElementById('images-status').textContent =
-        `已下载 ${result.images_downloaded || 0} 张图片`;
+
+      // Show/hide fields based on type and build the edit form
+      buildEditForm(type, result);
 
       // Preview images
       const preview = document.getElementById('images-preview');
