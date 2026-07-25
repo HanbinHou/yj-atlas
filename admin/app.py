@@ -331,23 +331,17 @@ def api_publish():
         if result.returncode != 0:
             return jsonify({"steps": steps, "error": "build failed"})
 
-        # 2. Deploy
+        # 2. Deploy to Cloudflare Pages
         steps.append({"step": "deploy", "status": "running"})
         result = subprocess.run(
-            "npx netlify deploy --prod --dir=dist",
+            "npx wrangler pages deploy dist --project-name=yj-atlas",
             cwd=str(BASE_DIR), capture_output=True, text=True, timeout=180,
             shell=True, encoding="utf-8", errors="replace",
         )
         steps[-1]["status"] = "ok" if result.returncode == 0 else "error"
         steps[-1]["output"] = result.stdout[-500:] + result.stderr[-500:]
 
-        # Extract deploy URL
-        deploy_url = ""
-        for line in result.stdout.split("\n"):
-            if "Production URL:" in line or "production URL" in line.lower():
-                deploy_url = line.split()[-1].strip()
-        if not deploy_url:
-            deploy_url = "https://yjatlas.com"
+        deploy_url = "https://yjatlas.com"
         steps[-1]["url"] = deploy_url
 
         # 3. Git backup
