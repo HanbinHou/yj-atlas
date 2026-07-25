@@ -22,6 +22,7 @@ materials:
 - 正交胶合木
 - 清水混凝土
 - 玻璃
+order: 8
 tags:
 - 日式檐廊
 - 木结构
@@ -32,8 +33,6 @@ title: Engawa体育馆（Engawa Sports Facility）
 type: 体育建筑
 year: 2025
 ---
-
-
 ## 基本信息
 
 | 项目 | 内容 |
