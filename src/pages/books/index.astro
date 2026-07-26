@@ -1,100 +1,190 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
-import BookCard from '../../components/BookCard.astro';
 
 const allBooks = await getCollection('books');
-const categories = [...new Set(allBooks.map(b => b.data.category))].sort();
-const readingPaths = ['beginner', 'intermediate', 'advanced'] as const;
+
+const CATEGORIES = [
+  '建筑学基础与入门',
+  '建筑史',
+  '建筑师',
+  '建筑学论著',
+  '建筑结构',
+  '材料构造与细部',
+  '建筑技术',
+  '设计表达',
+];
+
 const pathLabels: Record<string, string> = { beginner: '入门', intermediate: '进阶', advanced: '深度' };
+
+// Group books by category
+const grouped: Record<string, typeof allBooks> = {};
+for (const cat of CATEGORIES) {
+  grouped[cat] = allBooks.filter(b => b.data.category === cat);
+}
+// Uncategorized fallback
+const other = allBooks.filter(b => !CATEGORIES.includes(b.data.category));
+if (other.length > 0) {
+  grouped['其他'] = other;
+}
 ---
 
 <BaseLayout
   title="书目"
-  description="建筑阅读书目 — 按类别、阅读路径浏览"
+  description="建筑阅读书目 — 按分类浏览建筑学经典著作"
 >
   <div class="container" style="padding-top: var(--space-xl);">
     <h1 style="margin-bottom: var(--space-lg);">书目</h1>
 
-    <div style="display: flex; flex-wrap: wrap; gap: var(--space-lg); margin-bottom: var(--space-lg);">
-      <!-- Category filters -->
-      <div>
-        <span style="font-size: 0.78rem; color: var(--color-text-muted); letter-spacing: 0.04em; text-transform: uppercase; display: block; margin-bottom: var(--space-xs);">分类</span>
-        <div class="tag-list" id="category-filters">
-          <span class="tag tag-filter active" data-category="" style="cursor:pointer;" role="button" tabindex="0">全部</span>
-          {categories.map(cat => (
-            <span class="tag tag-filter" data-category={cat} style="cursor:pointer;" role="button" tabindex="0">{cat}</span>
-          ))}
-        </div>
-      </div>
-
-      <!-- Reading path filters -->
-      <div>
-        <span style="font-size: 0.78rem; color: var(--color-text-muted); letter-spacing: 0.04em; text-transform: uppercase; display: block; margin-bottom: var(--space-xs);">阅读路径</span>
-        <div class="tag-list" id="path-filters">
-          <span class="tag tag-filter active" data-path="" style="cursor:pointer;" role="button" tabindex="0">全部</span>
-          {readingPaths.map(p => (
-            <span class="tag tag-filter" data-path={p} style="cursor:pointer;" role="button" tabindex="0">{pathLabels[p]}</span>
-          ))}
-        </div>
-      </div>
-    </div>
-
-    <p class="result-count" id="result-count"></p>
-
-    <div class="card-grid">
-      {allBooks.map(b => (
-        <div data-card data-category={b.data.category} data-path={b.data.readingPath}>
-          <BookCard book={b} />
+    <div class="accordion">
+      {Object.entries(grouped).map(([cat, books]) => (
+        <div class="accordion-section">
+          <button class="accordion-header" onclick="this.closest('.accordion-section').classList.toggle('collapsed')">
+            <span class="accordion-title">{cat}</span>
+            <span class="accordion-count">{books.length} 本</span>
+          </button>
+          <div class="accordion-body">
+            {books.length > 0 ? (
+              <ul class="book-list">
+                {books.map(b => (
+                  <li class="book-item">
+                    <a href={`/books/${b.id}/`} class="book-link">
+                      <span class="book-title">{b.data.title}</span>
+                      <span class="book-author">{b.data.author}</span>
+                      {b.data.year && <span class="book-year">{b.data.year}</span>}
+                      <span class={`reading-path ${b.data.readingPath}`}>
+                        {pathLabels[b.data.readingPath]}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p class="empty-cat">暂无书目</p>
+            )}
+          </div>
         </div>
       ))}
     </div>
   </div>
 </BaseLayout>
 
-<script>
-  const catTags = document.querySelectorAll('#category-filters .tag-filter');
-  const pathTags = document.querySelectorAll('#path-filters .tag-filter');
-  const cards = document.querySelectorAll<HTMLElement>('[data-card]');
-  const resultCount = document.getElementById('result-count');
-
-  let activeCategory = '';
-  let activePath = '';
-
-  function updateCount() {
-    const visible = document.querySelectorAll('[data-card]:not([hidden])').length;
-    const total = cards.length;
-    if (resultCount) {
-      resultCount.textContent = visible === total ? `共 ${total} 本` : `显示 ${visible} / ${total} 本`;
-    }
+<style>
+  .accordion {
+    max-width: 900px;
+    margin: 0 auto;
   }
 
-  function applyFilters() {
-    cards.forEach(card => {
-      const matchCat = !activeCategory || card.dataset.category === activeCategory;
-      const matchPath = !activePath || card.dataset.path === activePath;
-      card.hidden = !(matchCat && matchPath);
-    });
-    updateCount();
+  .accordion-section {
+    border-bottom: 1px solid var(--color-border);
   }
 
-  catTags.forEach(tag => {
-    tag.addEventListener('click', () => {
-      catTags.forEach(t => t.classList.remove('active'));
-      tag.classList.add('active');
-      activeCategory = tag.dataset.category || '';
-      applyFilters();
-    });
-  });
+  .accordion-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    color: var(--color-text);
+    letter-spacing: 0.04em;
+    transition: color 0.15s;
+  }
 
-  pathTags.forEach(tag => {
-    tag.addEventListener('click', () => {
-      pathTags.forEach(t => t.classList.remove('active'));
-      tag.classList.add('active');
-      activePath = tag.dataset.path || '';
-      applyFilters();
-    });
-  });
+  .accordion-header:hover {
+    color: var(--color-accent);
+  }
 
-  updateCount();
-</script>
+  .accordion-title {
+    font-weight: 400;
+  }
+
+  .accordion-count {
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+  }
+
+  .accordion-header::after {
+    content: '▾';
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-left: 1rem;
+    transition: transform 0.2s;
+  }
+
+  .accordion-section.collapsed .accordion-header::after {
+    transform: rotate(-90deg);
+  }
+
+  .accordion-body {
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    max-height: 2000px;
+    opacity: 1;
+  }
+
+  .accordion-section.collapsed .accordion-body {
+    max-height: 0;
+    opacity: 0;
+  }
+
+  .book-list {
+    list-style: none;
+    padding: 0 0 0.5rem 0;
+  }
+
+  .book-item {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .book-item:first-child {
+    border-top: none;
+  }
+
+  .book-link {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    padding: 0.65rem 0;
+    border-bottom: none;
+    transition: background 0.15s;
+    flex-wrap: wrap;
+  }
+
+  .book-link:hover {
+    background: var(--color-accent-light);
+    margin: 0 -0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    border-radius: var(--radius);
+  }
+
+  .book-title {
+    font-size: 0.95rem;
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  .book-author {
+    font-size: 0.82rem;
+    color: var(--color-text-secondary);
+    white-space: nowrap;
+  }
+
+  .book-year {
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+    margin-left: auto;
+  }
+
+  .empty-cat {
+    padding: 0.5rem 0 1rem;
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+</style>

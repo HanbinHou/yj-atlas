@@ -2,7 +2,7 @@
 title: 建筑：形式、空间和秩序
 author: 程大锦 (Francis D.K. Ching)
 year: 1979
-category: 建筑基础
+category: 建筑学基础与入门
 summary: 全球建筑学最广泛使用的入门教材。以数千幅手绘插图系统呈现建筑的基本要素：点、线、面、体、空间、秩序。
 tags:
   - 入门
