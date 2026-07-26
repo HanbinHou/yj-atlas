@@ -1,22 +1,18 @@
 ---
-title: 建筑：形式、空间和秩序
 author: 程大锦 (Francis D.K. Ching)
-year: 1979
 category: 建筑学基础与入门
+coverImage: D:\claude_code\aw-arch\public\images\books\建筑：形式、空间和秩序\cover.jpg
+price: 3
+readingPath: beginner
 summary: 全球建筑学最广泛使用的入门教材。以数千幅手绘插图系统呈现建筑的基本要素：点、线、面、体、空间、秩序。
 tags:
-  - 入门
-  - 教材
-  - 形式语言
-  - 图解
-readingPath: beginner
-price: 3
+- 入门
+- 教材
+- 形式语言
+- 图解
+title: 建筑：形式、空间和秩序
 unlockCode: yj2024
-hiddenContent: |
-  <h3>📥 下载链接</h3>
-  <p><a href="https://pan.baidu.com/s/example" target="_blank" rel="noopener">百度网盘：建筑形式空间和秩序（第四版）PDF</a></p>
-  <p>提取码：<code>yjatlas</code></p>
-  <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--color-text-muted);">如链接失效，请在公众号「咏迹探所」留言书名，我们会更新链接。</p>
+year: 1979
 ---
 
 ## 为什么这本书重要
