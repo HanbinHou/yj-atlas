@@ -590,7 +590,7 @@ def api_research_material():
 
 @app.route("/api/research-book", methods=["POST"])
 def api_research_book():
-    from researcher import get_api_key, research_book
+    from researcher import get_api_key, research_book, search_images, download_images
     import yaml as _yaml
 
     book_name = request.json.get("project_name", "").strip()
@@ -601,6 +601,16 @@ def api_research_book():
     if "error" in data: return jsonify(data), 500
 
     slug = data.get("slug", "")
+
+    # Download a cover image
+    cover_paths = []
+    try:
+        from researcher import search_images, download_images
+        imgs = search_images(f"{data.get('title','')} book cover", 3)
+        cover_paths = download_images(imgs[:1], slug, "books")
+    except Exception:
+        pass
+
     fm = {
         "title": data.get("title", ""), "author": data.get("author", ""),
         "category": data.get("category", ""),
@@ -608,6 +618,7 @@ def api_research_book():
         "summary": data.get("summary", ""),
         "tags": [t.strip() for t in data.get("tags", "").split(",") if t.strip()],
         "readingPath": data.get("readingPath", "intermediate"),
+        "coverImage": cover_paths[0] if cover_paths else "",
     }
     body = data.get("body", "")
     lines = ["---"]

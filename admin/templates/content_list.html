@@ -30,7 +30,9 @@
       <td style="color:var(--text2);font-size:0.82rem;">{{ (fm.get('tags', [])[:3] | join(', ')) }}</td>
       <td>
         <button class="btn btn-outline btn-sm" onclick="openEdit('{{ item.filename }}', '{{ type }}')" style="margin-right:4px;">编辑</button>
+        {% if type != 'books' %}
         <button class="btn btn-outline btn-sm" onclick="editImages('{{ item.filename }}', '{{ type }}')" style="margin-right:4px;">排序</button>
+        {% endif %}
         <button class="btn btn-outline btn-sm" onclick="deleteItem('{{ item.filename }}')">删除</button>
       </td>
     </tr>
@@ -287,6 +289,8 @@
         <div class="form-row"><div class="form-group"><label>分类</label><input id="ef-category" value="${esc(fm.category||'')}" /></div><div class="form-group"><label>阅读路径</label><select id="ef-readingPath"><option value="beginner" ${fm.readingPath==='beginner'?'selected':''}>入门</option><option value="intermediate" ${fm.readingPath==='intermediate'?'selected':''}>进阶</option><option value="advanced" ${fm.readingPath==='advanced'?'selected':''}>深度</option></select></div><div class="form-group"><label>年份</label><input id="ef-year" type="number" value="${fm.year||''}" /></div></div>
         <div class="form-group"><label>标签 (逗号分隔)</label><input id="ef-tags" value="${esc((fm.tags||[]).join(', '))}" /></div>
         <div class="form-group"><label>摘要</label><input id="ef-summary" value="${esc(fm.summary||'')}" /></div>
+        <div class="form-group"><label>封面图片路径</label><input id="ef-coverImage" value="${esc(fm.coverImage||'')}" /></div>
+        ${fm.coverImage ? `<div style="margin-bottom:1rem;"><img src="/site-images/${fm.coverImage.replace('/images/','')}" style="max-width:200px;border:1px solid var(--border);border-radius:var(--radius);" /></div>` : ''}
         <div class="form-group"><label>价格 (¥)</label><input id="ef-price" type="number" value="${fm.price||''}" /></div>
         <div class="form-group"><label>解锁码</label><input id="ef-unlockCode" value="${esc(fm.unlockCode||'')}" /></div>
         <div class="form-group"><label>正文 (Markdown)</label><textarea id="ef-body" rows="10">${esc(data.body||'')}</textarea></div>
@@ -332,6 +336,7 @@
         year: parseInt(document.getElementById('ef-year').value) || null,
         tags: document.getElementById('ef-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
         summary: document.getElementById('ef-summary').value,
+        coverImage: document.getElementById('ef-coverImage')?.value || '',
         price: parseFloat(document.getElementById('ef-price').value) || undefined,
         unlockCode: document.getElementById('ef-unlockCode').value || undefined,
       };
