@@ -10,6 +10,13 @@ tags:
   - 氛围
   - 感知
 readingPath: intermediate
+price: 3
+unlockCode: yj2024
+hiddenContent: |
+  <h3>📥 下载链接</h3>
+  <p><a href="https://pan.baidu.com/s/example" target="_blank" rel="noopener">百度网盘：建筑氛围 PDF</a></p>
+  <p>提取码：<code>yjatlas</code></p>
+  <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--color-text-muted);">如链接失效，请在公众号「咏迹探所」留言书名。</p>
 ---
 
 ## 九章氛围

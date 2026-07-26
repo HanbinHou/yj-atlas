@@ -13,6 +13,11 @@ tags:
 title: 建筑：形式、空间和秩序
 unlockCode: yj2024
 year: 1979
+hiddenContent: |
+  <h3>📥 下载链接</h3>
+  <p><a href="https://pan.baidu.com/s/example" target="_blank" rel="noopener">百度网盘：建筑形式空间和秩序（第四版）PDF</a></p>
+  <p>提取码：<code>yjatlas</code></p>
+  <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--color-text-muted);">如链接失效，请在公众号「咏迹探所」留言书名，我们会更新链接。</p>
 ---
 
 ## 为什么这本书重要

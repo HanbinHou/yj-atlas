@@ -293,6 +293,7 @@
         ${fm.coverImage ? `<div style="margin-bottom:1rem;"><img src="/site-images/${fm.coverImage.replace('/images/','')}" style="max-width:200px;border:1px solid var(--border);border-radius:var(--radius);" /></div>` : ''}
         <div class="form-group"><label>价格 (¥)</label><input id="ef-price" type="number" value="${fm.price||''}" /></div>
         <div class="form-group"><label>解锁码</label><input id="ef-unlockCode" value="${esc(fm.unlockCode||'')}" /></div>
+        <div class="form-group"><label>隐藏内容 (HTML, 解锁后显示)</label><textarea id="ef-hiddenContent" rows="4">${esc(fm.hiddenContent||'')}</textarea></div>
         <div class="form-group"><label>正文 (Markdown)</label><textarea id="ef-body" rows="10">${esc(data.body||'')}</textarea></div>
       `;
     }
@@ -339,6 +340,7 @@
         coverImage: document.getElementById('ef-coverImage')?.value || '',
         price: parseFloat(document.getElementById('ef-price').value) || undefined,
         unlockCode: document.getElementById('ef-unlockCode').value || undefined,
+        hiddenContent: document.getElementById('ef-hiddenContent')?.value || undefined,
       };
     }
 
