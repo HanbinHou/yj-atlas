@@ -2,16 +2,6 @@
 author: 彼得·卒母托
 category: 建筑师
 coverImage: ''
-hiddenContent: '<h3>📥 下载链接</h3>
-
-  <p><a href=" https://pan.baidu.com/s/1UYaC9_w7vCn9hjhkXs1mMA?pwd=7i45" target="_blank"
-  rel="noopener">百度网盘：建筑氛围 PDF</a></p>
-
-  <p>提取码：<code>yjatlas</code></p>
-
-  <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--color-text-muted);">如链接失效，请在公众号「咏迹探所」留言书名。</p>
-
-  '
 price: 3
 readingPath: intermediate
 summary: 普利兹克奖得主卒母托以极其个人化、诗意的语言讨论"氛围"——人们在空间中即刻感知到的、超越视觉的情感品质。
