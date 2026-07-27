@@ -54,6 +54,12 @@ def slugify(text: str) -> str:
     text = re.sub(r'[-\s]+', '-', text)
     return text[:80]
 
+def next_order(content_type: str) -> int:
+    """Get the next order value for new content (max + 1)."""
+    items = list_content(content_type)
+    max_order = max((item.get("frontmatter", {}).get("order", 0) for item in items), default=0)
+    return max_order + 1
+
 def list_content(content_type: str) -> list[dict]:
     """List all content files of a given type with their frontmatter."""
     dir_map = {"cases": CASES_DIR, "materials": MATERIALS_DIR, "books": BOOKS_DIR}
@@ -65,10 +71,11 @@ def list_content(content_type: str) -> list[dict]:
         data = read_frontmatter(md_file)
         data["filename"] = md_file.name
         data["slug"] = md_file.stem
+        data["_mtime"] = md_file.stat().st_mtime
         items.append(data)
-    # Sort by order desc (cases + materials)
+    # Sort by order desc, items without order fall back to mtime desc
     if content_type in ("cases", "materials"):
-        items.sort(key=lambda x: (x.get("frontmatter", {}).get("order", 0), x.get("slug", "")), reverse=True)
+        items.sort(key=lambda x: (x.get("frontmatter", {}).get("order", 0), x.get("_mtime", 0)), reverse=True)
     return items
 
 # ─── routes ────────────────────────────────────────────
@@ -225,6 +232,10 @@ def api_save(content_type):
     if not target:
         return jsonify({"error": "invalid type"}), 400
 
+    # Auto-set order for new cases and materials
+    if content_type in ("cases", "materials") and "order" not in frontmatter:
+        frontmatter["order"] = next_order(content_type)
+
     # Build markdown
     lines = ["---"]
     lines.append(yaml.dump(frontmatter, allow_unicode=True, default_flow_style=False).strip())
@@ -335,6 +346,7 @@ def api_import_case():
                 shutil.copy2(f, dest_file)
             img_paths.append(f"/images/cases/{slug}/{dest_file.name}")
     fm["images"] = img_paths
+    fm["order"] = next_order("cases")
 
     # Write markdown
     lines = ["---"]
@@ -510,6 +522,7 @@ def api_import_enriched():
             img_paths.append(f"/images/cases/{slug}/{dest_file.name}")
 
     fm["images"] = img_paths
+    fm["order"] = next_order("cases")
 
     # Save MD
     import yaml
@@ -678,6 +691,7 @@ def api_research_project():
 
     # Update frontmatter with image paths
     fm["images"] = img_paths
+    fm["order"] = next_order("cases")
     import yaml
     lines = ["---"]
     lines.append(yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip())
