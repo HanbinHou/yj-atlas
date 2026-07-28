@@ -14,9 +14,9 @@ const cases = (await getCollection('cases'))
     if (orderA !== orderB) return orderB - orderA;
     return b._mtime - a._mtime;
   })
-  .slice(0, 8);
-const materials = (await getCollection('materials')).slice(0, 8);
-const books = (await getCollection('books')).slice(0, 8);
+  .slice(0, 9);
+const materials = (await getCollection('materials')).slice(0, 6);
+const books = (await getCollection('books')).slice(0, 6);
 ---
 
 <BaseLayout

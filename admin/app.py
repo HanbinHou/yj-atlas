@@ -345,7 +345,7 @@ def api_import_case():
             except Exception:
                 shutil.copy2(f, dest_file)
             img_paths.append(f"/images/cases/{slug}/{dest_file.name}")
-    fm["images"] = img_paths
+    fm["images"] = _clean_image_paths(img_paths)
     fm["order"] = next_order("cases")
 
     # Write markdown
@@ -521,7 +521,7 @@ def api_import_enriched():
                 shutil.copy2(f, dest_file)
             img_paths.append(f"/images/cases/{slug}/{dest_file.name}")
 
-    fm["images"] = img_paths
+    fm["images"] = _clean_image_paths(img_paths)
     fm["order"] = next_order("cases")
 
     # Save MD
@@ -559,6 +559,11 @@ def api_pick_folder():
         pass
     return jsonify({"folder": ""})
 
+def _clean_image_paths(paths: list[str]) -> list[str]:
+    """Strip localhost prefix from image paths if present."""
+    import re
+    return [re.sub(r'https?://localhost:\d+/site-images/', '/images/', p) for p in paths]
+
 # ─── AI Research ──────────────────────────────────────
 
 @app.route("/api/research-material", methods=["POST"])
@@ -590,7 +595,7 @@ def api_research_material():
         "description": data.get("description", ""),
         "tags": [t.strip() for t in data.get("tags", "").split(",") if t.strip()],
         "properties": data.get("properties", []),
-        "images": img_paths,
+        "images": _clean_image_paths(img_paths),
     }
     body = data.get("body", "")
     lines = ["---"]
@@ -690,7 +695,7 @@ def api_research_project():
     img_paths = download_images(all_images[:8], slug)
 
     # Update frontmatter with image paths
-    fm["images"] = img_paths
+    fm["images"] = _clean_image_paths(img_paths)
     fm["order"] = next_order("cases")
     import yaml
     lines = ["---"]
