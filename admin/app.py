@@ -276,8 +276,8 @@ def api_scan_crawler():
 
 @app.route("/api/import-case", methods=["POST"])
 def api_import_case():
-    """Import one project from crawler → format via DeepSeek → copy images."""
-    from researcher import get_api_key, _deepseek_chat, parse_response, build_markdown, _slugify, RESEARCH_PROMPT
+    """Import one project from crawler → web search + DeepSeek format + copy images."""
+    from researcher import get_api_key, _deepseek_chat, _ddgs_search, parse_response, build_markdown, _slugify, RESEARCH_PROMPT
 
     payload = request.json
     source_folder = Path(payload["source_folder"])
@@ -286,14 +286,18 @@ def api_import_case():
     include_images = payload.get("include_images", True)
     crawler_body = payload.get("body", "")
 
-    # Use DeepSeek to reformat crawler content into standard template
     api_key = get_api_key()
     if api_key and crawler_body:
         try:
+            # Web search for more info
+            search_query = f"{architect} {title} architecture"
+            web_results = _ddgs_search(search_query, count=4)
+            sources_text = "\n\n".join([f"来源: {r.get('url','')}\n{r.get('body','')[:2000]}" for r in web_results[:3]])
+
             prompt = RESEARCH_PROMPT.format(project_name=f"{architect} - {title}")
             text = _deepseek_chat(
                 system_prompt="你是一位建筑学教授。将以下建筑项目资料整理成标准格式。使用简体中文。",
-                user_message=f"以下是爬虫抓取的建筑项目原始资料，请整理成标准格式：\n\n{crawler_body[:4000]}\n\n{prompt}",
+                user_message=f"爬虫资料：\n{crawler_body[:3000]}\n\n网络搜索：\n{sources_text}\n\n{prompt}",
             )
             data = parse_response(text)
             slug = _slugify(data.get("title") or title)
