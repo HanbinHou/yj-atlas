@@ -10,7 +10,6 @@ hiddenContent: '<h3>📥 下载链接</h3>
   <p>提取码：<code>yjatlas</code></p>
 
   <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--color-text-muted);">如链接失效，请在公众号「咏迹探所」留言书名。</p>'
-price: 4
 readingPath: beginner
 summary: 本书是建筑细部设计的行业标准指南，系统阐释将功能性、可建造性与美学融为一体以成就高性能建筑的原则。通过模式化的最佳实践，讲解为何细部设计至关重要，以及如何设计能控水隔热、适应各种运动且易于施工的细部。第四版依据最新国际建筑规范与节能标准全面更新，融入预制装配、模块化建造及可持续韧性设计的最新知识，以大量清晰插图示范不漏、不凝、不裂的细部构造方法。
 tags:

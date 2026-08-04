@@ -11,7 +11,6 @@ hiddenContent: '<h3>📥 下载链接</h3>
   <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--color-text-muted);">如链接失效，请在公众号「咏迹探所」留言书名，我们会更新链接。</p>
 
   '
-price: 3
 readingPath: beginner
 summary: 全球建筑学最广泛使用的入门教材。以数千幅手绘插图系统呈现建筑的基本要素：点、线、面、体、空间、秩序。
 tags:
