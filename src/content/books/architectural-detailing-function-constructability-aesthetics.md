@@ -1,6 +1,6 @@
 ---
 author: Edward Allen, Patrick Rand, Jason Miller
-category: 材料与构造
+category: 材料构造与细部
 coverImage: /images/books/architectural-detailing-function-constructability-aesthetics/01.png
 hiddenContent: '<h3>📥 下载链接</h3>
 
