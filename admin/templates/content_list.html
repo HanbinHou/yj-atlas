@@ -131,6 +131,10 @@
   }
 </script>
 
+<script>
+  const CAT_OPTIONS = ['建筑学基础与入门','建筑史','建筑师','建筑学论著','建筑结构','材料构造与细部','建筑技术','设计表达'];
+</script>
+
   <!-- Image Reorder Modal -->
   <div id="reorder-modal" class="modal-overlay" style="display:none;" onclick="closeReorder(event)">
     <div class="modal-box" onclick="event.stopPropagation()">
@@ -286,7 +290,7 @@
     } else {
       fields = `
         <div class="form-row"><div class="form-group"><label>书名</label><input id="ef-title" value="${esc(fm.title||'')}" /></div><div class="form-group"><label>作者</label><input id="ef-author" value="${esc(fm.author||'')}" /></div></div>
-        <div class="form-row"><div class="form-group"><label>分类</label><input id="ef-category" value="${esc(fm.category||'')}" /></div><div class="form-group"><label>阅读路径</label><select id="ef-readingPath"><option value="beginner" ${fm.readingPath==='beginner'?'selected':''}>入门</option><option value="intermediate" ${fm.readingPath==='intermediate'?'selected':''}>进阶</option><option value="advanced" ${fm.readingPath==='advanced'?'selected':''}>深度</option></select></div><div class="form-group"><label>年份</label><input id="ef-year" type="number" value="${fm.year||''}" /></div></div>
+        <div class="form-row"><div class="form-group"><label>分类</label><select id="ef-category">${CAT_OPTIONS.map(c => '<option value="'+c+'"'+(fm.category===c?' selected':'')+'>'+c+'</option>').join('')}${fm.category&&!CAT_OPTIONS.includes(fm.category)?'<option value="'+esc(fm.category)+'" selected>'+esc(fm.category)+'</option>':''}<option value="其他">其他</option></select></div><div class="form-group"><label>阅读路径</label><select id="ef-readingPath"><option value="beginner" ${fm.readingPath==='beginner'?'selected':''}>入门</option><option value="intermediate" ${fm.readingPath==='intermediate'?'selected':''}>进阶</option><option value="advanced" ${fm.readingPath==='advanced'?'selected':''}>深度</option></select></div><div class="form-group"><label>年份</label><input id="ef-year" type="number" value="${fm.year||''}" /></div></div>
         <div class="form-group"><label>标签 (逗号分隔)</label><input id="ef-tags" value="${esc((fm.tags||[]).join(', '))}" /></div>
         <div class="form-group"><label>摘要</label><input id="ef-summary" value="${esc(fm.summary||'')}" /></div>
         <div class="form-group"><label>封面图片路径</label><input id="ef-coverImage" value="${esc(fm.coverImage||'')}" /></div>
