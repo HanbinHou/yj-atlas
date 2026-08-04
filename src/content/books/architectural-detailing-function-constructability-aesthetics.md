@@ -5,7 +5,7 @@ coverImage: /images/books/architectural-detailing-function-constructability-aest
 hiddenContent: '<h3>📥 下载链接</h3>
 
   <p><a href=" https://pan.baidu.com/s/1Eq4WEyeEi3HJRFqx3acA0g?pwd=b3jt" target="_blank"
-  rel="noopener">百度网盘：建筑氛围 PDF</a></p>
+  rel="noopener">百度网盘：architectural detailing PDF</a></p>
 
   <p>提取码：<code>yjatlas</code></p>
 
@@ -18,8 +18,8 @@ tags:
 - 施工性
 - 建筑性能
 - 可持续设计
-title: 'Architectural Detailing: Function, Constructability, Aesthetics'
-unlockCode: yj2024
+title: Architectural Detailing
+unlockCode: yj2025
 year: 2024
 ---
 
