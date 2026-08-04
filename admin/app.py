@@ -624,6 +624,10 @@ def api_research_book():
 
     slug = data.get("slug", "")
 
+    # Auto-generate unique unlock code
+    import random, string
+    auto_code = 'yj' + ''.join(random.choices(string.ascii_lowercase + string.digits, k=4))
+
     # Download a cover image
     cover_paths = []
     try:
@@ -640,6 +644,8 @@ def api_research_book():
         "summary": data.get("summary", ""),
         "tags": [t.strip() for t in data.get("tags", "").split(",") if t.strip()],
         "readingPath": data.get("readingPath", "intermediate"),
+        "unlockCode": auto_code,
+        "price": 3,
         "coverImage": cover_paths[0] if cover_paths else "",
     }
     body = data.get("body", "")
