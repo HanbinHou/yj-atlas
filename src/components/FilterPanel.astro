@@ -70,16 +70,6 @@ const {
     <button id="filter-reset" class="btn-reset">清除筛选</button>
   </div>
 
-  {allTags.length > 0 && (
-    <div style="margin-top: var(--space-md);">
-      <span style="font-size: 0.78rem; color: var(--color-text-muted); letter-spacing: 0.04em; text-transform: uppercase;">标签</span>
-      <div class="tag-list" id="tag-filter-container">
-        {allTags.map(t => (
-          <span class="tag tag-filter" data-tag={t} role="button" tabindex="0" style="cursor:pointer;">{t}</span>
-        ))}
-      </div>
-    </div>
-  )}
 </div>
 
 <p class="result-count" id="result-count"></p>
@@ -89,11 +79,8 @@ const {
   const cards = document.querySelectorAll<HTMLElement>('[data-card]');
   const selects = document.querySelectorAll<HTMLSelectElement>('.filter-select');
   const inputs = document.querySelectorAll<HTMLInputElement>('.filter-input');
-  const tagFilters = document.querySelectorAll<HTMLElement>('.tag-filter');
   const resetBtn = document.getElementById('filter-reset');
   const resultCount = document.getElementById('result-count');
-
-  let activeTag = '';
 
   function updateCount() {
     const visible = document.querySelectorAll('[data-card]:not([hidden])').length;
@@ -123,7 +110,6 @@ const {
       if (filters.location && !data.location.includes(filters.location)) visible = false;
       if (filters.yearMin && data.year < parseInt(filters.yearMin)) visible = false;
       if (filters.yearMax && data.year > parseInt(filters.yearMax)) visible = false;
-      if (activeTag && !data.tags.includes(activeTag)) visible = false;
 
       card.hidden = !visible;
     });
@@ -131,41 +117,14 @@ const {
     updateCount();
   }
 
-  selects.forEach(s => s.addEventListener('change', () => {
-    activeTag = '';
-    tagFilters.forEach(t => t.classList.remove('active'));
-    applyFilters();
-  }));
+  selects.forEach(s => s.addEventListener('change', applyFilters));
   inputs.forEach(i => i.addEventListener('input', applyFilters));
   resetBtn?.addEventListener('click', () => {
     selects.forEach(s => s.value = '');
     inputs.forEach(i => i.value = '');
-    activeTag = '';
-    tagFilters.forEach(t => t.classList.remove('active'));
     applyFilters();
-  });
-
-  tagFilters.forEach(tag => {
-    tag.addEventListener('click', () => {
-      const isActive = tag.classList.contains('active');
-      tagFilters.forEach(t => t.classList.remove('active'));
-      if (isActive) {
-        activeTag = '';
-      } else {
-        tag.classList.add('active');
-        activeTag = tag.dataset.tag || '';
-      }
-      applyFilters();
-    });
   });
 
   updateCount();
 </script>
 
-<style>
-  .tag-filter.active {
-    background: var(--color-accent-light);
-    border-color: var(--color-accent);
-    color: var(--color-accent-dark);
-  }
-</style>
