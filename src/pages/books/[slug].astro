@@ -86,9 +86,9 @@ const relatedCases = allCases.filter(c => {
         <div class="unlock-box" id="unlock-box">
           <div class="unlock-header">
             <span class="unlock-icon">&#128274;</span>
-            <h3>付费内容</h3>
+            <h3>获取下载链接</h3>
           </div>
-          <p class="unlock-desc">购买后可查看下载链接。价格：<strong>&yen;{book.data.price}</strong></p>
+          <p class="unlock-desc">关注公众号 <strong>AppletreeVsOrchard</strong>（见木见林），回复关键词<strong>「{book.data.title}」</strong>获取解锁码</p>
           <div class="unlock-form">
             <input
               type="text"
@@ -100,7 +100,7 @@ const relatedCases = allCases.filter(c => {
             <button id="unlock-btn" class="unlock-btn">解锁</button>
           </div>
           <p class="unlock-hint" id="unlock-hint" style="display:none; color: #c62828; font-size: 0.85rem;">解锁码不正确</p>
-          <p class="unlock-footer">获取解锁码：关注公众号 <strong>咏迹探所</strong> 回复「{book.data.title}」</p>
+          <p class="unlock-footer">获取解锁码：关注公众号 <strong>AppletreeVsOrchard</strong>（见木见林）回复「{book.data.title}」</p>
         </div>
 
         <!-- Unlocked content (hidden by default) -->
