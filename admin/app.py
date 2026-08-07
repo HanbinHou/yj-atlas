@@ -42,7 +42,16 @@ def read_frontmatter(path: Path) -> dict:
     if text.startswith("---"):
         parts = text.split("---", 2)
         if len(parts) >= 3:
-            fm = yaml.safe_load(parts[1]) or {}
+            try:
+                fm = yaml.safe_load(parts[1]) or {}
+            except Exception:
+                # YAML parse failed — extract just the key:value lines
+                fm = {}
+                for line in parts[1].strip().split("\n"):
+                    line = line.strip()
+                    if ":" in line and not line.startswith("-") and not line.startswith("#"):
+                        k, v = line.split(":", 1)
+                        fm[k.strip()] = v.strip()
             return {"frontmatter": fm, "body": parts[2].strip()}
     return {"frontmatter": {}, "body": text.strip()}
 
@@ -254,6 +263,8 @@ def api_scan_crawler():
         return jsonify({"error": "no folder"}), 400
 
     base = Path(folder)
+    if not base.exists():
+        return jsonify({"error": f"文件夹不存在: {folder}"}), 400
     projects = []
     for subdir in sorted(base.iterdir()):
         if not subdir.is_dir() or subdir.name.startswith("_"):
@@ -261,17 +272,28 @@ def api_scan_crawler():
         md_file = subdir / "content.md"
         if not md_file.exists():
             continue
-        data = read_frontmatter(md_file)
-        # Count images
-        images = sorted([f.name for f in subdir.glob("*.jpg")])
-        projects.append({
-            "folder": subdir.name,
-            "path": str(subdir),
-            "frontmatter": data.get("frontmatter", {}),
-            "body": data.get("body", ""),
-            "images": images,
-            "image_count": len(images),
-        })
+        try:
+            data = read_frontmatter(md_file)
+            # Count images
+            images = sorted([f.name for f in subdir.glob("*.jpg")])
+            projects.append({
+                "folder": subdir.name,
+                "path": str(subdir),
+                "frontmatter": data.get("frontmatter", {}),
+                "body": data.get("body", ""),
+                "images": images,
+                "image_count": len(images),
+            })
+        except Exception as e:
+            projects.append({
+                "folder": subdir.name,
+                "path": str(subdir),
+                "error": str(e),
+                "frontmatter": {},
+                "body": "",
+                "images": [],
+                "image_count": 0,
+            })
     return jsonify(projects)
 
 @app.route("/api/import-case", methods=["POST"])
