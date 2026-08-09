@@ -31,6 +31,10 @@ tags:
 title: V-ZUG Zephyr Ost 垂直工厂（V-ZUG Zephyr Ost）
 type: 工业建筑
 year: 0
+materialIds:
+- mat-b48c02ee81
+- mat-9d90a6e5e8
+- mat-e03b84d113
 ---
 
 

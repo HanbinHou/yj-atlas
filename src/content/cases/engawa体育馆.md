@@ -32,6 +32,10 @@ tags:
 title: Engawa体育馆（Engawa Sports Facility）
 type: 体育建筑
 year: 2025
+materialIds:
+- mat-1568d98d91
+- mat-068bf7d937
+- mat-9d90a6e5e8
 ---
 ## 基本信息
 

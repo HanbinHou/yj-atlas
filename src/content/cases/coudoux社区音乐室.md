@@ -80,6 +80,12 @@ tags:
 title: Coudoux社区音乐室（Music Room in Coudoux）
 type: 社区中心
 year: 2022
+materialIds:
+- mat-eda92b178a
+- mat-75a7de2254
+- mat-cd74e79a5e
+- mat-068bf7d937
+- mat-89376752aa
 ---
 
 

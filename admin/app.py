@@ -63,6 +63,107 @@ def slugify(text: str) -> str:
     text = re.sub(r'[-\s]+', '-', text)
     return text[:80]
 
+def as_list(value) -> list[str]:
+    """Normalize form/AI values into a clean string list."""
+    if value is None:
+        return []
+    if isinstance(value, list):
+        items = value
+    elif isinstance(value, str):
+        items = re.split(r"[,，、/]", value)
+    else:
+        items = [value]
+    return [str(item).strip() for item in items if str(item).strip()]
+
+def unique_list(values) -> list[str]:
+    result = []
+    seen = set()
+    for value in values:
+        text = str(value).strip()
+        if text and text not in seen:
+            seen.add(text)
+            result.append(text)
+    return result
+
+def material_match_key(value: str) -> str:
+    """Create a loose key so Low-e glass / curtain wall variants can match."""
+    text = str(value or "").lower().strip()
+    text = re.sub(r"\s+", "", text)
+    text = re.sub(r"[-_/·.]", "", text)
+    text = re.sub(r"[()（）\[\]【】{}《》<>]", "", text)
+    return text
+
+def material_lookup() -> tuple[dict[str, str], list[tuple[str, str]]]:
+    exact = {}
+    fuzzy = []
+    for md_file in MATERIALS_DIR.glob("*.md"):
+        data = read_frontmatter(md_file)
+        fm = data.get("frontmatter", {})
+        material_id = str(fm.get("canonicalId") or md_file.stem).strip()
+        names = unique_list([
+            md_file.stem,
+            material_id,
+            fm.get("title", ""),
+            *as_list(fm.get("aliases", [])),
+        ])
+        for name in names:
+            key = material_match_key(name)
+            if not key:
+                continue
+            exact.setdefault(key, material_id)
+            fuzzy.append((key, material_id))
+    return exact, fuzzy
+
+def infer_material_ids(materials, existing_ids=None) -> list[str]:
+    ids = as_list(existing_ids)
+    exact, fuzzy = material_lookup()
+
+    for material in as_list(materials):
+        key = material_match_key(material)
+        if not key:
+            continue
+        if key in exact:
+            ids.append(exact[key])
+            continue
+        # Avoid over-linking very generic terms like "玻璃".
+        if len(key) < 3:
+            continue
+        for candidate_key, material_id in fuzzy:
+            if key in candidate_key or candidate_key in key:
+                ids.append(material_id)
+
+    return unique_list(ids)
+
+def prepare_frontmatter(content_type: str, frontmatter: dict, existing_frontmatter: dict | None = None) -> dict:
+    """Keep generated content aligned with the Astro content schema."""
+    fm = dict(frontmatter or {})
+    existing_frontmatter = existing_frontmatter or {}
+
+    if content_type == "cases":
+        fm["materials"] = as_list(fm.get("materials", []))
+        fm["tags"] = as_list(fm.get("tags", []))
+        existing_ids = as_list(existing_frontmatter.get("materialIds", []))
+        fm["materialIds"] = infer_material_ids(fm.get("materials", []), fm.get("materialIds", existing_ids))
+        fm.setdefault("images", [])
+        return fm
+
+    if content_type == "materials":
+        fm["scenarios"] = as_list(fm.get("scenarios", []))
+        fm["tags"] = as_list(fm.get("tags", []))
+        fm["aliases"] = unique_list([
+            fm.get("title", ""),
+            *as_list(fm.get("aliases", [])),
+            *fm["scenarios"],
+            *fm["tags"],
+        ])
+        return fm
+
+    if content_type == "books":
+        fm["tags"] = as_list(fm.get("tags", []))
+        return fm
+
+    return fm
+
 def next_order(content_type: str) -> int:
     """Get the next order value for new content (max + 1)."""
     items = list_content(content_type)
@@ -219,6 +320,9 @@ def api_edit(content_type, filename):
     if not md_file.exists():
         return jsonify({"error": "file not found"}), 404
 
+    existing_frontmatter = read_frontmatter(md_file).get("frontmatter", {})
+    frontmatter = prepare_frontmatter(content_type, frontmatter, existing_frontmatter)
+
     lines = ["---"]
     lines.append(yaml.dump(frontmatter, allow_unicode=True, default_flow_style=False).strip())
     lines.append("---")
@@ -244,6 +348,8 @@ def api_save(content_type):
     # Auto-set order for new cases and materials
     if content_type in ("cases", "materials") and "order" not in frontmatter:
         frontmatter["order"] = next_order(content_type)
+
+    frontmatter = prepare_frontmatter(content_type, frontmatter)
 
     # Build markdown
     lines = ["---"]
@@ -373,6 +479,9 @@ def api_import_case():
             img_paths.append(f"/images/cases/{slug}/{dest_file.name}")
     fm["images"] = _clean_image_paths(img_paths)
     fm["order"] = next_order("cases")
+    if payload.get("materialIds"):
+        fm["materialIds"] = payload.get("materialIds", [])
+    fm = prepare_frontmatter("cases", fm)
 
     # Write markdown
     lines = ["---"]
@@ -382,7 +491,7 @@ def api_import_case():
     lines.append(body_final)
     dest_md.write_text("\n".join(lines), encoding="utf-8")
 
-    return jsonify({"ok": True, "slug": slug, "images_copied": len(img_paths)})
+    return jsonify({"ok": True, "slug": slug, "images_copied": len(img_paths), "materialIds": fm.get("materialIds", [])})
 
 @app.route("/api/publish", methods=["POST"])
 def api_publish():
@@ -549,6 +658,7 @@ def api_import_enriched():
 
     fm["images"] = _clean_image_paths(img_paths)
     fm["order"] = next_order("cases")
+    fm = prepare_frontmatter("cases", fm)
 
     # Save MD
     import yaml
@@ -623,6 +733,7 @@ def api_research_material():
         "properties": data.get("properties", []),
         "images": _clean_image_paths(img_paths),
     }
+    fm = prepare_frontmatter("materials", fm)
     body = data.get("body", "")
     lines = ["---"]
     lines.append(_yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip())
@@ -670,6 +781,7 @@ def api_research_book():
         "price": 3,
         "coverImage": cover_paths[0] if cover_paths else "",
     }
+    fm = prepare_frontmatter("books", fm)
     body = data.get("body", "")
     lines = ["---"]
     lines.append(_yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip())
@@ -729,6 +841,7 @@ def api_research_project():
     # Update frontmatter with image paths
     fm["images"] = _clean_image_paths(img_paths)
     fm["order"] = next_order("cases")
+    fm = prepare_frontmatter("cases", fm)
     import yaml
     lines = ["---"]
     lines.append(yaml.dump(fm, allow_unicode=True, default_flow_style=False).strip())
@@ -751,6 +864,7 @@ def api_research_project():
         "description": data.get("description", ""),
         "tags": data.get("tags", ""),
         "materials": data.get("materials", ""),
+        "materialIds": fm.get("materialIds", []),
         "images_downloaded": len(img_paths),
         "image_paths": img_paths,
         "md_preview": md_text[:500],

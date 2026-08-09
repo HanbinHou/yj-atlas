@@ -59,6 +59,11 @@ tags:
 title: UR 北京三里屯旗舰店（Urban Revivo Sanlitun Flagship Store）
 type: 商业
 year: 2023
+materialIds:
+- mat-b8e1b6abd4
+- mat-f07d31bc5d
+- mat-ea6d260e2d
+- mat-918b234519
 ---
 
 

@@ -9,6 +9,7 @@ const casesCollection = defineCollection({
     year: z.number(),
     type: z.string(),
     materials: z.array(z.string()).default([]),
+    materialIds: z.array(z.string()).default([]),
     location: z.string(),
     tags: z.array(z.string()).default([]),
     description: z.string(),
@@ -22,6 +23,8 @@ const materialsCollection = defineCollection({
   loader: glob({ pattern: "**/*.md", base: "./src/content/materials" }),
   schema: z.object({
     title: z.string(),
+    canonicalId: z.string().optional(),
+    aliases: z.array(z.string()).default([]),
     category: z.string(),
     subcategory: z.string().optional(),
     scenarios: z.array(z.string()).default([]),

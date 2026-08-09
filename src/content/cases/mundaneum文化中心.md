@@ -28,6 +28,9 @@ tags:
 title: Mundaneum文化中心（Le Mundaneum）
 type: 文化建筑
 year: 2015
+materialIds:
+- mat-508632a35f
+- mat-544ffee691
 ---
 
 

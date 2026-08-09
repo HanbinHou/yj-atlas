@@ -44,6 +44,12 @@ tags:
 title: 日内瓦Vieusseux塔楼改造（Vieusseux Tower Renovation）
 type: 改造项目
 year: 2021
+materialIds:
+- mat-aa7d0e5d59
+- mat-f1c4171f4b
+- mat-1b32a4baa7
+- mat-4e60874057
+- mat-7785bddc7b
 ---
 ## 基本信息
 

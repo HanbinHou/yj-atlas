@@ -24,7 +24,7 @@ const items: SearchItem[] = [
     slug: c.id,
     title: c.data.title,
     subtitle: `${c.data.architect} · ${c.data.year} · ${c.data.location}`,
-    tags: [c.data.type, c.data.architect, c.data.location, ...c.data.materials, ...c.data.tags],
+    tags: [c.data.type, c.data.architect, c.data.location, ...c.data.materials, ...c.data.materialIds, ...c.data.tags],
     url: `/cases/${c.id}/`,
   })),
   ...allMaterials.map(m => ({
@@ -33,7 +33,7 @@ const items: SearchItem[] = [
     slug: m.id,
     title: m.data.title,
     subtitle: m.data.category,
-    tags: [m.data.category, ...m.data.scenarios, ...m.data.tags],
+    tags: [m.data.category, m.data.canonicalId || '', ...m.data.aliases, ...m.data.scenarios, ...m.data.tags].filter(Boolean),
     url: `/materials/${m.id}/`,
   })),
   ...allBooks.map(b => ({

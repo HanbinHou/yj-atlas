@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getCollection } from 'astro:content';
+import { caseUsesMaterial } from '../../lib/materials';
 
 export async function getStaticPaths() {
   const materials = await getCollection('materials');
@@ -13,9 +14,7 @@ const material = materials.find(m => m.id === slug)!;
 
 // Find related cases
 const allCases = await getCollection('cases');
-const relatedCases = allCases.filter(c =>
-  c.data.materials.includes(material.data.title)
-);
+const relatedCases = allCases.filter(c => caseUsesMaterial(c, material));
 const allBooks = await getCollection('books');
 const relatedBooks = allBooks.filter(b => {
   const sharedTags = (b.data.tags || []).filter(t => (material.data.tags || []).includes(t));

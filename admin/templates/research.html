@@ -42,6 +42,7 @@
   let currentData = null;
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function splitList(value) { return String(value || '').split(/[,，、/]/).map(s => s.trim()).filter(Boolean); }
 
   function buildEditForm(type, result) {
     const container = document.getElementById('edit-form-fields');
@@ -52,6 +53,7 @@
         <div class="form-row"><div class="form-group"><label>标题</label><input id="edit-title" value="${esc(result.title||'')}" /></div><div class="form-group"><label>建筑师</label><input id="edit-architect" value="${esc(result.architect||'')}" /></div></div>
         <div class="form-row"><div class="form-group"><label>年份</label><input id="edit-year" value="${esc(result.year||'')}" /></div><div class="form-group"><label>类型</label><input id="edit-type" value="${esc(result.type||'')}" /></div><div class="form-group"><label>地点</label><input id="edit-location" value="${esc(result.location||'')}" /></div></div>
         <div class="form-group"><label>材料（逗号分隔）</label><input id="edit-materials" value="${esc(result.materials||'')}" /></div>
+        <div class="form-group"><label>材料 ID（可选，逗号分隔）</label><input id="edit-materialIds" value="${esc((result.materialIds||[]).join ? result.materialIds.join(', ') : (result.materialIds||''))}" placeholder="low-e-glass, mat-730da79103" /><span class="form-hint">留空时后台会自动根据材料库匹配；用于修正知识网络连接。</span></div>
         <div class="form-group"><label>标签（逗号分隔）</label><input id="edit-tags" value="${esc(result.tags||'')}" /></div>
         <div class="form-group"><label>描述</label><input id="edit-description" value="${esc(result.description||'')}" /></div>
         <div class="form-group"><label>正文（Markdown，可编辑）</label><textarea id="edit-body" rows="12">${esc(result.raw||'')}</textarea></div>
@@ -162,9 +164,10 @@
         architect: document.getElementById('edit-architect').value,
         year: parseInt(document.getElementById('edit-year').value) || 0,
         type: document.getElementById('edit-type').value,
-        materials: document.getElementById('edit-materials').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        materials: splitList(document.getElementById('edit-materials').value),
+        materialIds: splitList(document.getElementById('edit-materialIds').value),
         location: document.getElementById('edit-location').value,
-        tags: document.getElementById('edit-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        tags: splitList(document.getElementById('edit-tags').value),
         description: document.getElementById('edit-description').value,
         images: currentData.image_paths || [],
       };
@@ -172,8 +175,8 @@
       frontmatter = {
         title: document.getElementById('edit-title').value,
         category: document.getElementById('edit-type').value,
-        scenarios: document.getElementById('edit-materials').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
-        tags: document.getElementById('edit-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        scenarios: splitList(document.getElementById('edit-materials').value),
+        tags: splitList(document.getElementById('edit-tags').value),
         description: document.getElementById('edit-description').value,
         properties: [],
         images: currentData.image_paths || [],
@@ -185,7 +188,7 @@
         year: parseInt(document.getElementById('edit-year').value) || null,
         category: document.getElementById('edit-type').value,
         summary: document.getElementById('edit-description').value,
-        tags: document.getElementById('edit-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        tags: splitList(document.getElementById('edit-tags').value),
         readingPath: 'intermediate',
       };
     }

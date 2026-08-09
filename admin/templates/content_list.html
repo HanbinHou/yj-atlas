@@ -47,10 +47,15 @@
   const TYPE = '{{ type }}';
   const LABEL = '{{ label }}';
 
+  function splitList(value) {
+    return String(value || '').split(/[,，、/]/).map(s => s.trim()).filter(Boolean);
+  }
+
   const caseFields = `
     <div class="form-row"><div class="form-group"><label>标题</label><input id="f-title" /></div><div class="form-group"><label>建筑师</label><input id="f-architect" /></div></div>
     <div class="form-row"><div class="form-group"><label>类型</label><input id="f-type" /></div><div class="form-group"><label>年份</label><input id="f-year" type="number" value="2025" /></div><div class="form-group"><label>地点</label><input id="f-location" /></div></div>
     <div class="form-group"><label>材料 (逗号分隔)</label><input id="f-materials" /></div>
+    <div class="form-group"><label>材料 ID (可选，逗号分隔)</label><input id="f-materialIds" placeholder="low-e-glass, mat-730da79103" /><span class="form-hint">留空时后台会自动根据材料库匹配；用于修正知识网络连接。</span></div>
     <div class="form-group"><label>标签 (逗号分隔)</label><input id="f-tags" /></div>
     <div class="form-group"><label>一句话描述</label><input id="f-description" /></div>
     <div class="form-group"><label>正文 (Markdown)</label><textarea id="f-body" rows="4"></textarea></div>
@@ -90,17 +95,18 @@
         title, architect: document.getElementById('f-architect').value,
         year: parseInt(document.getElementById('f-year').value) || 2025,
         type: document.getElementById('f-type').value,
-        materials: document.getElementById('f-materials').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        materials: splitList(document.getElementById('f-materials').value),
+        materialIds: splitList(document.getElementById('f-materialIds').value),
         location: document.getElementById('f-location').value,
-        tags: document.getElementById('f-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        tags: splitList(document.getElementById('f-tags').value),
         description: document.getElementById('f-description').value,
         images: [],
       };
     } else if (TYPE === 'materials') {
       frontmatter = {
         title, category: document.getElementById('f-category').value,
-        scenarios: document.getElementById('f-scenarios').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
-        tags: document.getElementById('f-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        scenarios: splitList(document.getElementById('f-scenarios').value),
+        tags: splitList(document.getElementById('f-tags').value),
         description: document.getElementById('f-description').value,
         properties: [],
       };
@@ -110,7 +116,7 @@
         category: document.getElementById('f-category').value,
         readingPath: document.getElementById('f-readingPath').value,
         year: parseInt(document.getElementById('f-year').value) || null,
-        tags: document.getElementById('f-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        tags: splitList(document.getElementById('f-tags').value),
         summary: document.getElementById('f-summary').value,
         price: parseFloat(document.getElementById('f-price').value) || undefined,
         unlockCode: document.getElementById('f-unlockCode').value || undefined,
@@ -275,6 +281,7 @@
         <div class="form-row"><div class="form-group"><label>标题</label><input id="ef-title" value="${esc(fm.title||'')}" /></div><div class="form-group"><label>建筑师</label><input id="ef-architect" value="${esc(fm.architect||'')}" /></div></div>
         <div class="form-row"><div class="form-group"><label>类型</label><input id="ef-type" value="${esc(fm.type||'')}" /></div><div class="form-group"><label>年份</label><input id="ef-year" type="number" value="${fm.year||''}" /></div><div class="form-group"><label>地点</label><input id="ef-location" value="${esc(fm.location||'')}" /></div></div>
         <div class="form-group"><label>材料 (逗号分隔)</label><input id="ef-materials" value="${esc((fm.materials||[]).join(', '))}" /></div>
+        <div class="form-group"><label>材料 ID (可选，逗号分隔)</label><input id="ef-materialIds" value="${esc((fm.materialIds||[]).join(', '))}" placeholder="low-e-glass, mat-730da79103" /><span class="form-hint">留空时后台会自动根据材料库匹配；用于修正知识网络连接。</span></div>
         <div class="form-group"><label>标签 (逗号分隔)</label><input id="ef-tags" value="${esc((fm.tags||[]).join(', '))}" /></div>
         <div class="form-group"><label>一句话描述</label><input id="ef-description" value="${esc(fm.description||'')}" /></div>
         <div class="form-group"><label>正文 (Markdown)</label><textarea id="ef-body" rows="10">${esc(data.body||'')}</textarea></div>
@@ -317,9 +324,10 @@
         architect: document.getElementById('ef-architect').value,
         year: parseInt(document.getElementById('ef-year').value) || 0,
         type: document.getElementById('ef-type').value,
-        materials: document.getElementById('ef-materials').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        materials: splitList(document.getElementById('ef-materials').value),
+        materialIds: splitList(document.getElementById('ef-materialIds').value),
         location: document.getElementById('ef-location').value,
-        tags: document.getElementById('ef-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        tags: splitList(document.getElementById('ef-tags').value),
         description: document.getElementById('ef-description').value,
         images: [],
       };
@@ -327,8 +335,8 @@
       frontmatter = {
         title: document.getElementById('ef-title').value,
         category: document.getElementById('ef-category').value,
-        scenarios: document.getElementById('ef-scenarios').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
-        tags: document.getElementById('ef-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        scenarios: splitList(document.getElementById('ef-scenarios').value),
+        tags: splitList(document.getElementById('ef-tags').value),
         description: document.getElementById('ef-description').value,
         properties: [],
       };
@@ -339,7 +347,7 @@
         category: document.getElementById('ef-category').value,
         readingPath: document.getElementById('ef-readingPath').value,
         year: parseInt(document.getElementById('ef-year').value) || null,
-        tags: document.getElementById('ef-tags').value.split(/[,，]/).map(s=>s.trim()).filter(Boolean),
+        tags: splitList(document.getElementById('ef-tags').value),
         summary: document.getElementById('ef-summary').value,
         coverImage: document.getElementById('ef-coverImage')?.value || '',
         price: parseFloat(document.getElementById('ef-price').value) || undefined,

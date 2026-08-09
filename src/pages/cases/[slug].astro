@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import KnowledgeNetwork from '../../components/KnowledgeNetwork.astro';
 import { getCollection } from 'astro:content';
+import { buildCaseKnowledgeGraph } from '../../lib/knowledgeGraph';
 
 export async function getStaticPaths() {
   const cases = await getCollection('cases');
@@ -11,19 +13,10 @@ const { slug } = Astro.params;
 const cases = await getCollection('cases');
 const case_ = cases.find(c => c.id === slug)!;
 
-// Collect all unique filter values for this case
-const materials = await getCollection('materials');
-const relatedMaterials = materials.filter(m =>
-  case_.data.materials.includes(m.data.title)
-);
+// Build the local knowledge network for this case.
+const allMaterials = await getCollection('materials');
 const allBooks = await getCollection('books');
-const relatedBooks = allBooks.filter(b => {
-  const bookTags = b.data.tags || [];
-  const caseTags = case_.data.tags || [];
-  const sharedTags = bookTags.filter(t => caseTags.includes(t));
-  const architectMatch = b.data.author?.includes(case_.data.architect) || case_.data.architect?.includes(b.data.author?.split('(')[0]?.trim());
-  return sharedTags.length > 0 || architectMatch;
-}).slice(0, 5);
+const knowledgeGraph = buildCaseKnowledgeGraph(case_, cases, allMaterials, allBooks);
 ---
 
 <BaseLayout title={case_.data.title} description={case_.data.description}>
@@ -80,27 +73,7 @@ const relatedBooks = allBooks.filter(b => {
       </section>
     )}
 
-    {relatedMaterials.length > 0 && (
-      <section class="related-section">
-        <h3>相关材料</h3>
-        <ul class="related-list">
-          {relatedMaterials.map(m => (
-            <li><a href={`/materials/${m.id}/`}>{m.data.title}</a></li>
-          ))}
-        </ul>
-      </section>
-    )}
-
-    {relatedBooks.length > 0 && (
-      <section class="related-section">
-        <h3>相关书目</h3>
-        <ul class="related-list">
-          {relatedBooks.map(b => (
-            <li><a href={`/books/${b.id}/`}>{b.data.title}</a> — {b.data.author}</li>
-          ))}
-        </ul>
-      </section>
-    )}
+    <KnowledgeNetwork graph={knowledgeGraph} />
 
     <!-- Lightbox -->
     <div id="lightbox" class="lightbox-overlay" data-images={JSON.stringify(case_.data.images)}>

@@ -1,0 +1,489 @@
+---
+import type { CaseKnowledgeGraph } from '../lib/knowledgeGraph';
+
+interface Props {
+  graph: CaseKnowledgeGraph;
+}
+
+type NetworkNode = {
+  label: string;
+  url?: string;
+  sharedCount: number;
+  sharedLabel: string;
+  sharedTerms: string[];
+  x: number;
+  y: number;
+  lineX: number;
+  lineY: number;
+  style: string;
+};
+
+const { graph } = Astro.props;
+const center = { x: 50, y: 50 };
+const rawNodes = graph.relatedCases.map((related) => {
+  const sharedCount = related.sharedMaterials.length + related.sharedTags.length + (related.sameType ? 1 : 0);
+  const sharedTerms = Array.from(new Set([
+    ...related.sharedMaterials,
+    ...related.sharedTags,
+    ...(related.sameType && graph.type ? [graph.type] : []),
+  ].filter(Boolean)));
+  const visibleTerms = sharedTerms.slice(0, 5);
+  const hiddenCount = Math.max(sharedTerms.length - visibleTerms.length, 0);
+
+  return {
+    label: related.title.replace(/\uFF08.*$/, '').replace(/\s*\(.*$/, '').trim(),
+    url: related.url,
+    sharedCount,
+    sharedLabel: visibleTerms.length > 0
+      ? `${visibleTerms.join(' / ')}${hiddenCount > 0 ? ` +${hiddenCount}` : ''}`
+      : `共享 ${sharedCount} 项`,
+    sharedTerms,
+  };
+});
+
+const networkNodes: NetworkNode[] = rawNodes.map((node, index) => {
+  const angle = -90 + (360 / Math.max(rawNodes.length, 1)) * index;
+  const radians = (angle * Math.PI) / 180;
+  const radiusX = rawNodes.length <= 4 ? 30 : 32;
+  const radiusY = rawNodes.length <= 4 ? 30 : 34;
+  const position = {
+    x: Number((center.x + Math.cos(radians) * radiusX).toFixed(2)),
+    y: Number((center.y + Math.sin(radians) * radiusY).toFixed(2)),
+  };
+  const clampedCount = Math.min(Math.max(node.sharedCount, 1), 6);
+  const fontSize = Number((0.76 + clampedCount * 0.07).toFixed(2));
+  const nodeWidth = 124 + clampedCount * 12;
+
+  return {
+    ...node,
+    x: position.x,
+    y: position.y,
+    lineX: position.x,
+    lineY: position.y,
+    style: `--node-x: ${position.x}%; --node-y: ${position.y}%; --node-font-size: ${fontSize}rem; --node-width: ${nodeWidth}px;`,
+  };
+});
+
+const hasMetaTags = graph.materials.length > 0 || graph.type;
+const hasNetwork = networkNodes.length > 0 || hasMetaTags || graph.relatedBooks.length > 0;
+---
+
+{hasNetwork && (
+  <section class="knowledge-network" aria-labelledby="knowledge-network-title">
+    <div class="knowledge-network-header">
+      <div>
+        <p class="network-eyebrow">Knowledge Graph</p>
+        <h2 id="knowledge-network-title">&#30693;&#35782;&#32593;&#32476;</h2>
+      </div>
+    </div>
+
+    {networkNodes.length > 0 && (
+      <div class="network-map" aria-label="Knowledge network overview">
+        <svg class="network-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {networkNodes.map((node) => (
+            <line
+              x1={center.x}
+              y1={center.y}
+              x2={node.lineX}
+              y2={node.lineY}
+              class="network-line"
+            />
+          ))}
+        </svg>
+
+        <div class="network-center-node">
+          <strong>{graph.center.title}</strong>
+        </div>
+
+        <div class="network-orbit" aria-label="&#30693;&#35782;&#33410;&#28857;">
+          {networkNodes.map((node) => (
+            <a class="network-orbit-node" href={node.url} style={node.style}>
+              <strong>{node.label}</strong>
+              <span class="network-orbit-tags">{node.sharedLabel}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+
+    {hasMetaTags && (
+      <div class="network-meta-tags">
+        {graph.materials.length > 0 && (
+          <div class="network-meta-group">
+            <span class="network-meta-label">&#26448;&#26009;</span>
+            <div class="network-meta-list">
+              {graph.materials.map((material) => material.url ? (
+                <a href={material.url}>{material.label}</a>
+              ) : (
+                <span>{material.label}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {graph.type && (
+          <div class="network-meta-group">
+            <span class="network-meta-label">&#31867;&#22411;</span>
+            <div class="network-meta-list">
+              <a href={`/search/?q=${encodeURIComponent(graph.type)}`}>{graph.type}</a>
+            </div>
+          </div>
+        )}
+      </div>
+    )}
+
+    <div class="network-related-grid">
+      {graph.relatedCases.length > 0 && (
+        <div class="network-related-panel">
+          <div class="network-panel-heading">
+            <h3>&#30456;&#20851;&#26696;&#20363;</h3>
+            <span>{graph.relatedCases.length}</span>
+          </div>
+          <ul class="network-related-list">
+            {graph.relatedCases.map((related) => (
+              <li>
+                <a href={related.url}>{related.title}</a>
+                <p>{related.architect}</p>
+                <div class="network-reasons">
+                  {related.sharedMaterials.slice(0, 3).map((material) => <span>&#20849;&#20139;&#26448;&#26009;&#65306;{material}</span>)}
+                  {related.sharedTags.slice(0, 3).map((tag) => <span>&#20849;&#20139;&#27010;&#24565;&#65306;{tag}</span>)}
+                  {related.sameType && <span>&#21516;&#31867;&#22411;&#65306;{graph.type}</span>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {graph.relatedBooks.length > 0 && (
+        <div class="network-related-panel">
+          <div class="network-panel-heading">
+            <h3>&#30456;&#20851;&#20070;&#30446;</h3>
+            <span>{graph.relatedBooks.length}</span>
+          </div>
+          <ul class="network-related-list">
+            {graph.relatedBooks.map((book) => (
+              <li>
+                <a href={book.url}>{book.title}</a>
+                <p>{book.author}</p>
+                <div class="network-reasons">
+                  {book.sharedTags.slice(0, 3).map((tag) => <span>&#20849;&#20139;&#20027;&#39064;&#65306;{tag}</span>)}
+                  {book.architectMatch && <span>&#24314;&#31569;&#24072;&#30456;&#20851;</span>}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  </section>
+)}
+
+<style>
+  .knowledge-network {
+    margin-top: var(--space-xl);
+    padding-top: var(--space-lg);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .knowledge-network-header {
+    margin-bottom: var(--space-lg);
+  }
+
+  .network-eyebrow {
+    margin-bottom: var(--space-xs);
+    color: var(--color-accent-dark);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    line-height: 1.3;
+    text-transform: uppercase;
+  }
+
+  .knowledge-network h2,
+  .knowledge-network h3,
+  .knowledge-network p {
+    letter-spacing: 0;
+  }
+
+  .knowledge-network h2 {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 400;
+  }
+
+  .network-map {
+    position: relative;
+    min-height: 500px;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    background:
+      radial-gradient(circle at 50% 50%, rgba(212, 149, 138, 0.07), transparent 34%),
+      var(--color-surface);
+  }
+
+  .network-lines {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .network-line {
+    stroke: #d9d3cf;
+    stroke-linecap: round;
+    stroke-width: 1.15;
+    opacity: 0.95;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .network-center-node,
+  .network-orbit-node {
+    position: absolute;
+    z-index: 2;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-surface);
+  }
+
+  .network-center-node {
+    left: 50%;
+    top: 50%;
+    width: 220px;
+    min-height: 88px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: var(--space-md);
+    border-color: var(--color-text);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    transform: translate(-50%, -50%);
+  }
+
+  .network-center-node strong {
+    font-family: var(--font-serif);
+    font-size: 1.02rem;
+    font-weight: 400;
+    line-height: 1.45;
+  }
+
+  .network-orbit {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+  }
+
+  .network-orbit-node {
+    left: var(--node-x);
+    top: var(--node-y);
+    width: var(--node-width);
+    min-height: 66px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 9px 10px;
+    color: var(--color-text-secondary);
+    line-height: 1.28;
+    text-align: center;
+    transform: translate(-50%, -50%);
+    transition: border-color 0.2s, color 0.2s, background 0.2s, box-shadow 0.2s;
+  }
+
+  a.network-orbit-node {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .network-orbit-node:hover {
+    border-color: var(--color-accent);
+    background: var(--color-accent-light);
+    color: var(--color-accent-dark);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+  }
+
+  .network-orbit-node strong {
+    font-size: var(--node-font-size);
+    font-weight: 500;
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .network-orbit-tags {
+    display: -webkit-box;
+    overflow: hidden;
+    max-width: 100%;
+    color: var(--color-text-muted);
+    font-size: 0.66rem;
+    line-height: 1.28;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .network-meta-tags {
+    display: grid;
+    gap: var(--space-sm);
+    margin-top: var(--space-md);
+    padding-top: var(--space-md);
+    border-top: 1px solid var(--color-border);
+  }
+
+  .network-meta-group {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: var(--space-sm);
+    align-items: start;
+  }
+
+  .network-meta-label {
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    line-height: 1.8;
+  }
+
+  .network-meta-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-xs);
+  }
+
+  .network-meta-list a,
+  .network-meta-list span {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 3px 9px;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-bg);
+    color: var(--color-text-secondary);
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .network-related-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-md);
+    margin-top: var(--space-lg);
+  }
+
+  .network-related-panel {
+    border-top: 1px solid var(--color-border);
+    padding-top: var(--space-md);
+  }
+
+  .network-panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-sm);
+  }
+
+  .network-panel-heading h3 {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 0.9rem;
+    font-weight: 400;
+  }
+
+  .network-panel-heading span {
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+  }
+
+  .network-related-list {
+    list-style: none;
+    display: grid;
+    gap: var(--space-sm);
+  }
+
+  .network-related-list li {
+    padding-bottom: var(--space-sm);
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .network-related-list li:last-child {
+    border-bottom: none;
+  }
+
+  .network-related-list a {
+    font-size: 0.95rem;
+  }
+
+  .network-related-list p {
+    margin: 2px 0 var(--space-xs);
+    color: var(--color-text-muted);
+    font-size: 0.82rem;
+    line-height: 1.5;
+  }
+
+  .network-reasons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .network-reasons span {
+    color: var(--color-text-secondary);
+    font-size: 0.74rem;
+    line-height: 1.5;
+  }
+
+  .network-reasons span:not(:last-child)::after {
+    content: '/';
+    margin-left: 4px;
+    color: var(--color-border);
+  }
+
+  @media (max-width: 520px) {
+    .network-related-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .network-map {
+      display: grid;
+      gap: var(--space-sm);
+      min-height: auto;
+      padding: var(--space-md);
+      background: var(--color-surface);
+    }
+
+    .network-lines {
+      display: none;
+    }
+
+    .network-center-node,
+    .network-orbit,
+    .network-orbit-node {
+      position: static;
+      transform: none;
+    }
+
+    .network-center-node {
+      width: 100%;
+      min-height: auto;
+      padding: var(--space-md);
+    }
+
+    .network-orbit {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--space-xs);
+    }
+
+    .network-orbit-node {
+      width: 100%;
+      min-height: 62px;
+    }
+
+    .network-meta-group {
+      grid-template-columns: 1fr;
+      gap: var(--space-xs);
+    }
+  }
+</style>
