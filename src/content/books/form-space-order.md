@@ -8,7 +8,7 @@ hiddenContent: '<h3>📥 下载链接</h3>
 
   <p>提取码：<code>yjatlas</code></p>
 
-  <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--color-text-muted);">如链接失效，请在公众号「咏迹探所」留言书名，我们会更新链接。</p>
+  <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--color-text-muted);">如链接失效，请在公众号「咏迹探所」留言“01”，我们会更新链接。</p>
 
   '
 readingPath: beginner
