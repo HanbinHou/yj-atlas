@@ -42,6 +42,7 @@
   let currentData = null;
 
   function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function imgSrc(path) { return (path||'').replace(/^\/images\//, '/site-images/'); }
   function splitList(value) { return String(value || '').split(/[,，、/]/).map(s => s.trim()).filter(Boolean); }
 
   function buildEditForm(type, result) {

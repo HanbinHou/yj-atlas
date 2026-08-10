@@ -321,6 +321,8 @@ def api_edit(content_type, filename):
         return jsonify({"error": "file not found"}), 404
 
     existing_frontmatter = read_frontmatter(md_file).get("frontmatter", {})
+    if "images" in frontmatter:
+        frontmatter["images"] = _clean_image_paths(frontmatter["images"])
     frontmatter = prepare_frontmatter(content_type, frontmatter, existing_frontmatter)
 
     lines = ["---"]
@@ -349,6 +351,8 @@ def api_save(content_type):
     if content_type in ("cases", "materials") and "order" not in frontmatter:
         frontmatter["order"] = next_order(content_type)
 
+    if "images" in frontmatter:
+        frontmatter["images"] = _clean_image_paths(frontmatter["images"])
     frontmatter = prepare_frontmatter(content_type, frontmatter)
 
     # Build markdown
@@ -696,9 +700,15 @@ def api_pick_folder():
     return jsonify({"folder": ""})
 
 def _clean_image_paths(paths: list[str]) -> list[str]:
-    """Strip localhost prefix from image paths if present."""
+    """Strip localhost prefix and URL-decode image paths if present."""
     import re
-    return [re.sub(r'https?://localhost:\d+/site-images/', '/images/', p) for p in paths]
+    from urllib.parse import unquote
+    result = []
+    for p in paths:
+        p = re.sub(r'https?://localhost:\d+/site-images/', '/images/', p)
+        p = unquote(p)  # decode %E6%8B%89... → 拉乌...
+        result.append(p)
+    return result
 
 # ─── AI Research ──────────────────────────────────────
 
