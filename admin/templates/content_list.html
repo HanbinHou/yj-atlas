@@ -74,8 +74,8 @@
     <div class="form-row"><div class="form-group"><label>分类</label><input id="f-category" /></div><div class="form-group"><label>阅读路径</label><select id="f-readingPath"><option value="beginner">入门</option><option value="intermediate" selected>进阶</option><option value="advanced">深度</option></select></div><div class="form-group"><label>出版年份</label><input id="f-year" type="number" /></div></div>
     <div class="form-group"><label>标签</label><input id="f-tags" /></div>
     <div class="form-group"><label>摘要</label><input id="f-summary" /></div>
-    <div class="form-group"><label>价格 (¥，可选)</label><input id="f-price" type="number" /></div>
     <div class="form-group"><label>解锁码 (可选)</label><input id="f-unlockCode" /></div>
+    <div class="form-group"><label>回复关键词 (可选，留空则用书名)</label><input id="f-unlockKeyword" placeholder="短关键词，微信回复字数有限" /></div>
     <div class="form-group"><label>正文 (Markdown)</label><textarea id="f-body" rows="4"></textarea></div>
   `;
 
@@ -118,8 +118,8 @@
         year: parseInt(document.getElementById('f-year').value) || null,
         tags: splitList(document.getElementById('f-tags').value),
         summary: document.getElementById('f-summary').value,
-        price: parseFloat(document.getElementById('f-price').value) || undefined,
         unlockCode: document.getElementById('f-unlockCode').value || undefined,
+        unlockKeyword: document.getElementById('f-unlockKeyword').value.trim() || undefined,
       };
     }
 
@@ -302,8 +302,8 @@
         <div class="form-group"><label>摘要</label><input id="ef-summary" value="${esc(fm.summary||'')}" /></div>
         <div class="form-group"><label>封面图片路径</label><input id="ef-coverImage" value="${esc(fm.coverImage||'')}" /></div>
         ${fm.coverImage ? `<div style="margin-bottom:1rem;"><img src="/site-images/${fm.coverImage.replace('/images/','')}" style="max-width:200px;border:1px solid var(--border);border-radius:var(--radius);" /></div>` : ''}
-        <div class="form-group"><label>价格 (¥)</label><input id="ef-price" type="number" value="${fm.price||''}" /></div>
         <div class="form-group"><label>解锁码</label><input id="ef-unlockCode" value="${esc(fm.unlockCode||'')}" /></div>
+        <div class="form-group"><label>回复关键词 (可选，留空则用书名)</label><input id="ef-unlockKeyword" value="${esc(fm.unlockKeyword||'')}" placeholder="短关键词，微信回复字数有限" /></div>
         <div class="form-group"><label>隐藏内容 (HTML, 解锁后显示)</label><textarea id="ef-hiddenContent" rows="4">${esc(fm.hiddenContent||'')}</textarea></div>
         <div class="form-group"><label>正文 (Markdown)</label><textarea id="ef-body" rows="10">${esc(data.body||'')}</textarea></div>
       `;
@@ -350,8 +350,8 @@
         tags: splitList(document.getElementById('ef-tags').value),
         summary: document.getElementById('ef-summary').value,
         coverImage: document.getElementById('ef-coverImage')?.value || '',
-        price: parseFloat(document.getElementById('ef-price').value) || undefined,
         unlockCode: document.getElementById('ef-unlockCode').value || undefined,
+        unlockKeyword: document.getElementById('ef-unlockKeyword')?.value.trim() || undefined,
         hiddenContent: document.getElementById('ef-hiddenContent')?.value || undefined,
       };
     }

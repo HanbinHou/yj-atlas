@@ -57,6 +57,7 @@ const booksCollection = defineCollection({
     // unlock system
     price: z.number().optional(),
     unlockCode: z.string().optional(),
+    unlockKeyword: z.string().optional(),
     hiddenContent: z.string().optional(),
     hiddenImage: z.string().optional(),
   }),
