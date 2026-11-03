@@ -1,0 +1,351 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const email = 'hanbinhou1251009@gmail.com';
+---
+
+<BaseLayout
+  title="联系我"
+  description="联系咏迹探所 YJ Atlas — 电子邮箱与微信公众号"
+>
+  <section class="contact-page container">
+    <header class="contact-header">
+      <p class="contact-eyebrow">CONTACT</p>
+      <h1 class="contact-title">联系我</h1>
+      <p class="contact-intro">
+        内容合作、案例推荐、图片纠错，或任何关于建筑与书的想法，都欢迎联系。
+      </p>
+    </header>
+
+    <div class="contact-grid">
+      <article class="contact-card">
+        <p class="contact-label">EMAIL</p>
+        <h2>电子邮箱</h2>
+        <p class="contact-text">
+          最直接的方式。看到邮件我会尽量及时回复；如果涉及图片来源或版权问题，也请通过邮件告诉我。
+        </p>
+        <a class="contact-email" href={`mailto:${email}`}>{email}</a>
+      </article>
+
+      <article class="contact-card">
+        <p class="contact-label">WECHAT</p>
+        <h2>微信公众号</h2>
+        <div class="qr-wrap">
+          <img
+            class="qr-image"
+            src="/images/contact/wechat-qr.jpg"
+            alt="咏迹探所微信公众号二维码"
+            width="360"
+            height="360"
+            loading="lazy"
+          />
+        </div>
+        <p class="contact-text">
+          扫码关注「咏迹探所」。书目页的解锁码，可以在公众号内回复对应关键词获取。
+        </p>
+      </article>
+    </div>
+
+    <section class="message-section">
+      <div class="message-head">
+        <p class="contact-label">MESSAGE</p>
+        <h2>给我留言</h2>
+        <p class="contact-text">
+          填写后，留言会通过飞书机器人直接发给我，不会公开展示。留个邮箱方便我回复你。
+        </p>
+      </div>
+
+      <form id="contact-form" class="contact-form" method="POST" action="/api/contact">
+        <div class="form-row">
+          <label>
+            称呼
+            <input name="name" required maxlength="50" autocomplete="name" />
+          </label>
+          <label>
+            邮箱
+            <input name="email" type="email" required maxlength="120" autocomplete="email" />
+          </label>
+        </div>
+        <label>
+          留言
+          <textarea name="message" required rows="6" maxlength="2000"></textarea>
+        </label>
+        <input
+          class="hp"
+          type="text"
+          name="website"
+          tabindex="-1"
+          autocomplete="off"
+          aria-hidden="true"
+        />
+        <div class="form-actions">
+          <button type="submit">发送留言</button>
+          <p id="form-status" class="form-status" role="status"></p>
+        </div>
+      </form>
+    </section>
+  </section>
+</BaseLayout>
+
+<script>
+  const form = document.getElementById('contact-form');
+  const status = document.getElementById('form-status');
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = form.querySelector('button[type="submit"]');
+    button.disabled = true;
+    status.textContent = '发送中…';
+    status.dataset.state = '';
+
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) {
+        throw new Error(result.error || '发送失败，请稍后再试');
+      }
+      form.reset();
+      status.textContent = '已发送，谢谢你的留言！';
+      status.dataset.state = 'ok';
+    } catch (error) {
+      status.textContent = error.message || '发送失败，请稍后再试';
+      status.dataset.state = 'error';
+    } finally {
+      button.disabled = false;
+    }
+  });
+</script>
+
+<style>
+  .contact-page {
+    padding-top: var(--space-2xl);
+    padding-bottom: var(--space-xl);
+  }
+
+  .contact-header {
+    max-width: 640px;
+    margin-bottom: var(--space-xl);
+  }
+
+  .contact-eyebrow {
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: var(--color-accent);
+    margin-bottom: var(--space-sm);
+  }
+
+  .contact-title {
+    font-size: 2.2rem;
+    font-weight: 300;
+    letter-spacing: 0.06em;
+    margin-bottom: var(--space-md);
+  }
+
+  .contact-intro {
+    color: var(--color-text-secondary);
+    font-size: 1rem;
+  }
+
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--space-lg);
+    max-width: 900px;
+  }
+
+  .contact-card {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: var(--space-lg);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .contact-label {
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-sm);
+  }
+
+  .contact-card h2 {
+    font-size: 1.25rem;
+    font-weight: 400;
+    margin-bottom: var(--space-md);
+  }
+
+  .contact-text {
+    color: var(--color-text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.8;
+  }
+
+  .contact-email {
+    margin-top: auto;
+    padding-top: var(--space-md);
+    font-size: 1rem;
+    border-bottom: none;
+    color: var(--color-text);
+    word-break: break-all;
+  }
+
+  .contact-email:hover {
+    color: var(--color-accent);
+  }
+
+  .qr-wrap {
+    width: fit-content;
+    padding: var(--space-sm);
+    margin-bottom: var(--space-md);
+    background: #fff;
+    border: 1px solid var(--color-border);
+  }
+
+  .qr-image {
+    width: 200px;
+    height: 200px;
+  }
+
+  .message-section {
+    max-width: 900px;
+    margin-top: var(--space-xl);
+    padding: var(--space-lg);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+  }
+
+  .message-head {
+    max-width: 560px;
+    margin-bottom: var(--space-lg);
+  }
+
+  .message-head h2 {
+    font-size: 1.25rem;
+    font-weight: 400;
+    margin-bottom: var(--space-sm);
+  }
+
+  .contact-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+    max-width: 640px;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+  }
+
+  .contact-form label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    color: var(--color-text-secondary);
+  }
+
+  .contact-form input,
+  .contact-form textarea {
+    padding: 10px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 0.92rem;
+  }
+
+  .contact-form input:focus,
+  .contact-form textarea:focus {
+    outline: none;
+    border-color: var(--color-accent);
+  }
+
+  .contact-form textarea {
+    resize: vertical;
+    min-height: 140px;
+  }
+
+  .hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+
+  .form-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-md);
+  }
+
+  .contact-form button {
+    padding: 10px 28px;
+    border: none;
+    border-radius: var(--radius);
+    background: var(--color-text);
+    color: var(--color-surface);
+    font-family: var(--font-sans);
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+
+  .contact-form button:hover {
+    background: var(--color-accent-dark);
+  }
+
+  .contact-form button:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .form-status {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--color-text-secondary);
+  }
+
+  .form-status[data-state='ok'] {
+    color: #2e7d32;
+  }
+
+  .form-status[data-state='error'] {
+    color: #c62828;
+  }
+
+  @media (max-width: 768px) {
+    .contact-page {
+      padding-top: var(--space-xl);
+    }
+
+    .contact-title {
+      font-size: 1.7rem;
+    }
+
+    .contact-grid {
+      grid-template-columns: 1fr;
+      gap: var(--space-md);
+    }
+
+    .message-section {
+      padding: var(--space-md);
+    }
+
+    .form-row {
+      grid-template-columns: 1fr;
+    }
+
+    .form-actions {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
